@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Atelier" />
+  <title>Atelier — Strength Journal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── RESET & ROOT ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+    html { height: 100%; background: #1a1a1a; }
+    body {
+      height: 100%; background: #1a1a1a; color: #ededed;
+      font-family: 'DM Mono', ui-monospace, monospace;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior: none;
+    }
+
+    :root {
+      --bg:        #1a1a1a;
+      --bg-elev:   #232323;
+      --bg-card:   #1e1e1e;
+      --line:      #2e2e2e;
+      --line-soft: #252525;
+      --text:      #ededed;
+      --dim:       #888;
+      --faint:     #4e4e4e;
+      --gold:      #c9a84c;
+      --gold-dim:  rgba(201,168,76,0.12);
+      --teal:      #7fb3a8;
+      --purple:    #9d8bb5;
+      --serif:     'Playfair Display', Georgia, serif;
+      --mono:      'DM Mono', ui-monospace, monospace;
+      --radius:    0px;
+      --safe-top:  env(safe-area-inset-top, 0px);
+      --safe-bot:  env(safe-area-inset-bottom, 0px);
+    }
+
+    /* ─── APP SHELL ─────────────────────────────────────── */
+    #app {
+      position: relative;
+      width: 100%;
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ─── SCREENS ───────────────────────────────────────── */
+    .screen {
+      position: absolute;
+      inset: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      transition: transform 300ms cubic-bezier(.4,0,.2,1), opacity 250ms;
+      will-change: transform, opacity;
+      background: var(--bg);
+      min-height: 100vh;
+    }
+    .screen.active  { transform: translateX(0);    opacity: 1; pointer-events: all; }
+    .screen.to-left { transform: translateX(-40px); opacity: 0; pointer-events: none; }
+    .screen.to-right{ transform: translateX(40px);  opacity: 0; pointer-events: none; }
+
+    /* ─── LOADING ────────────────────────────────────────── */
+    #screen-loading {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 100vh; gap: 22px;
+    }
+    .load-monogram {
+      font-family: var(--serif); font-size: 30px;
+      letter-spacing: 6px; color: var(--gold);
+      font-weight: 500;
+    }
+    .load-bar {
+      width: 48px; height: 1px;
+      background: var(--line); position: relative; overflow: hidden;
+    }
+    .load-bar::after {
+      content: ''; position: absolute; inset: 0;
+      background: var(--gold);
+      animation: sweep 1.4s ease-in-out infinite;
+    }
+    @keyframes sweep {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(200%); }
+    }
+    .load-label {
+      font-size: 10px; letter-spacing: 3px; color: var(--faint);
+      text-transform: uppercase;
+    }
+
+    /* ─── CALENDAR SCREEN ───────────────────────────────── */
+    #screen-cal { padding-bottom: calc(24px + var(--safe-bot)); }
+
+    .cal-header {
+      padding: calc(var(--safe-top) + 28px) 24px 22px;
+      text-align: center;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .cal-monogram {
+      font-family: var(--serif); font-size: 12px;
+      letter-spacing: 8px; color: var(--gold); font-weight: 500;
+    }
+    .cal-title {
+      font-family: var(--serif); font-style: italic;
+      font-size: 28px; margin-top: 6px; letter-spacing: 0.3px;
+    }
+    .cal-sub {
+      font-size: 9px; letter-spacing: 3.5px; color: var(--faint);
+      text-transform: uppercase; margin-top: 5px;
+    }
+
+    /* Today banner */
+    .today-banner {
+      margin: 20px 20px 0;
+      padding: 18px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--gold);
+      cursor: pointer;
+      transition: background 180ms, transform 180ms;
+      -webkit-user-select: none;
+    }
+    .today-banner:active { transform: scale(0.985); background: var(--bg-elev); }
+    .today-banner[data-type="pull"] { border-left-color: var(--teal); }
+    .today-banner[data-type="tri"]  { border-left-color: var(--purple); }
+    .today-banner[data-type="rest"] { border-left-color: var(--faint); cursor: default; }
+    .tb-eyebrow {
+      font-size: 9px; letter-spacing: 3px; color: var(--faint);
+      text-transform: uppercase;
+    }
+    .tb-name {
+      font-family: var(--serif); font-style: italic;
+      font-size: 30px; margin-top: 4px; color: var(--gold);
+    }
+    .today-banner[data-type="pull"] .tb-name { color: var(--teal); }
+    .today-banner[data-type="tri"]  .tb-name { color: var(--purple); }
+    .today-banner[data-type="rest"] .tb-name { color: var(--faint); }
+    .tb-cta {
+      font-size: 11px; color: var(--faint);
+      margin-top: 7px; letter-spacing: 1px;
+    }
+
+    /* Stats row */
+    .stats-row {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      margin: 22px 20px;
+      border-top: 1px solid var(--line-soft);
+      border-bottom: 1px solid var(--line-soft);
+      padding: 16px 0;
+    }
+    .stat {
+      text-align: center;
+      border-right: 1px solid var(--line-soft);
+    }
+    .stat:last-child { border-right: none; }
+    .stat-n {
+      font-family: var(--serif); font-size: 24px; color: var(--gold);
+    }
+    .stat-l {
+      font-size: 8px; letter-spacing: 2.5px; color: var(--faint);
+      text-transform: uppercase; margin-top: 3px;
+    }
+
+    /* Month nav */
+    .month-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; margin-bottom: 10px;
+    }
+    .mnav-btn {
+      background: none; border: 1px solid var(--line);
+      color: var(--text); width: 34px; height: 34px;
+      font-size: 20px; cursor: pointer; font-family: var(--serif);
+      display: flex; align-items: center; justify-content: center;
+      transition: background 150ms;
+    }
+    .mnav-btn:active { background: var(--bg-elev); }
+    .month-name {
+      font-family: var(--serif); font-style: italic;
+      font-size: 19px; letter-spacing: 0.3px;
+    }
+
+    /* DOW row */
+    .dow-row {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      padding: 0 20px; margin-bottom: 4px;
+    }
+    .dow {
+      text-align: center; font-size: 9px; letter-spacing: 1.5px;
+      color: var(--faint); text-transform: uppercase; padding: 4px 0;
+    }
+
+    /* Grid */
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 2px; padding: 0 20px;
+    }
+    .cal-cell {
+      aspect-ratio: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 3px;
+      background: var(--bg-card); border: 1px solid transparent;
+      cursor: pointer; position: relative;
+      transition: background 150ms;
+      -webkit-user-select: none;
+    }
+    .cal-cell.blank { background: transparent; cursor: default; border: none; }
+    .cal-cell.rest  { opacity: 0.3; cursor: default; }
+    .cal-cell:not(.blank):not(.rest):active { background: var(--bg-elev); }
+    .cal-cell.is-today {
+      background: var(--bg-elev);
+      box-shadow: inset 0 0 0 1px var(--gold);
+    }
+    .cal-cell.is-done { border-color: var(--gold); }
+    .cal-cell.is-done[data-type="pull"] { border-color: var(--teal); }
+    .cal-cell.is-done[data-type="tri"]  { border-color: var(--purple); }
+    .cell-num { font-size: 13px; }
+    .cell-num.done-num { color: var(--gold); }
+    .cell-num.done-num[data-type="pull"] { color: var(--teal); }
+    .cell-num.done-num[data-type="tri"]  { color: var(--purple); }
+    .cell-dot {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--gold);
+    }
+    .cell-dot[data-type="pull"] { background: var(--teal); }
+    .cell-dot[data-type="tri"]  { background: var(--purple); }
+    .cell-dot[data-type="rest"] { display: none; }
+
+    /* Legend */
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 16px;
+      justify-content: center; padding: 22px 20px 0;
+    }
+    .leg-item { display: flex; align-items: center; gap: 7px; }
+    .leg-dot  { width: 7px; height: 7px; border-radius: 50%; }
+    .leg-txt  { font-size: 10px; letter-spacing: 1.5px; color: var(--dim); }
+
+    /* ─── WORKOUT SCREEN ─────────────────────────────────── */
+    #screen-workout {
+      padding-bottom: calc(90px + var(--safe-bot));
+    }
+
+    .wk-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: calc(var(--safe-top) + 18px) 20px 14px;
+    }
+    .back-btn {
+      background: none; border: 1px solid var(--line);
+      color: var(--text); width: 38px; height: 38px;
+      font-size: 22px; font-family: var(--serif); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 150ms;
+    }
+    .back-btn:active { background: var(--bg-elev); }
+    .wk-date-lbl {
+      font-size: 10px; letter-spacing: 2.5px; color: var(--dim);
+      text-transform: uppercase; text-align: center; flex: 1;
+    }
+    .wk-spacer { width: 38px; }
+
+    .wk-hero {
+      text-align: center; padding: 32px 24px 24px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .wk-eyebrow {
+      font-size: 9px; letter-spacing: 4px; color: var(--faint);
+      text-transform: uppercase;
+    }
+    .wk-title {
+      font-family: var(--serif); font-style: italic;
+      font-size: 48px; margin-top: 8px; color: var(--gold);
+      line-height: 1;
+    }
+
+    /* Volume bar */
+    .vol-card {
+      margin: 20px 20px 0;
+      padding: 16px 18px;
+      background: var(--bg-card); border: 1px solid var(--line-soft);
+    }
+    .vol-top {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-bottom: 10px;
+    }
+    .vol-lbl { font-size: 9px; letter-spacing: 2.5px; color: var(--faint); text-transform: uppercase; }
+    .vol-num { font-family: var(--serif); font-size: 20px; color: var(--gold); }
+    .vol-track {
+      height: 3px; background: var(--line); position: relative;
+    }
+    .vol-fill {
+      height: 100%; background: var(--gold);
+      transition: width 350ms ease;
+      max-width: 100%;
+    }
+    .vol-marker {
+      position: absolute; top: -6px; bottom: -6px;
+      width: 1px; background: var(--faint);
+    }
+    .vol-marker-lbl {
+      position: absolute; top: -18px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 8px; letter-spacing: 1px; color: var(--faint); text-transform: uppercase;
+    }
+    .vol-bot {
+      display: flex; justify-content: space-between; margin-top: 8px;
+    }
+    .vol-bot-lbl { font-size: 9px; color: var(--faint); }
+    .vol-bot-num { font-size: 11px; color: var(--dim); }
+
+    /* Exercise groups */
+    .ex-groups { padding: 24px 20px 0; display: flex; flex-direction: column; gap: 30px; }
+    .grp-name {
+      font-family: var(--serif); font-style: italic;
+      font-size: 17px; color: var(--dim);
+      padding-bottom: 10px; border-bottom: 1px solid var(--line-soft);
+      margin-bottom: 12px;
+    }
+    .ex-card {
+      background: var(--bg-card); border: 1px solid var(--line-soft);
+      padding: 14px 14px 12px; margin-bottom: 10px;
+    }
+    .ex-name { font-size: 12px; letter-spacing: 1px; margin-bottom: 12px; }
+
+    .set-table { width: 100%; border-collapse: collapse; }
+    .set-table thead td {
+      font-size: 8px; letter-spacing: 2.5px; color: var(--faint);
+      text-transform: uppercase; padding-bottom: 6px;
+      text-align: center;
+    }
+    .set-table thead td:first-child { text-align: left; width: 20px; }
+    .set-table thead td:last-child  { text-align: right; }
+    .set-row td { padding: 3px 2px; }
+    .set-row td:first-child {
+      font-family: var(--serif); font-style: italic;
+      font-size: 15px; color: var(--faint);
+      width: 20px; text-align: center;
+    }
+    .set-input {
+      width: 100%; background: var(--bg-elev);
+      border: 1px solid var(--line); color: var(--text);
+      font-family: var(--mono); font-size: 15px;
+      padding: 9px 6px; text-align: center; outline: none;
+      -webkit-appearance: none; border-radius: 0;
+    }
+    .set-input:focus { border-color: var(--gold); }
+    .set-input[type=number]::-webkit-outer-spin-button,
+    .set-input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .set-prev-cell {
+      text-align: right; font-size: 10px; color: var(--faint);
+      padding-left: 6px; white-space: nowrap;
+    }
+    .set-row.is-pr .set-input {
+      border-color: var(--gold);
+      background: var(--gold-dim);
+      color: var(--gold);
+    }
+    .set-row.is-pr td:first-child { color: var(--gold); }
+
+    /* Finish btn */
+    .finish-wrap {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 430px;
+      padding: 12px 20px calc(12px + var(--safe-bot));
+      background: linear-gradient(transparent, var(--bg) 30%);
+    }
+    .finish-btn {
+      width: 100%; background: var(--gold); color: var(--bg);
+      border: none; padding: 17px;
+      font-family: var(--serif); font-style: italic;
+      font-size: 17px; letter-spacing: 0.5px; cursor: pointer;
+      box-shadow: 0 8px 32px rgba(201,168,76,0.25);
+      transition: background 150ms, transform 150ms;
+    }
+    .finish-btn:active { background: #b5943f; transform: scale(0.99); }
+
+    /* Rest day */
+    .rest-screen {
+      text-align: center; padding: 80px 24px;
+    }
+    .rest-glyph { font-size: 40px; color: var(--gold); margin-bottom: 20px; }
+    .rest-title {
+      font-family: var(--serif); font-style: italic;
+      font-size: 40px;
+    }
+    .rest-body {
+      font-size: 12px; letter-spacing: 1.5px; color: var(--dim);
+      margin-top: 12px; line-height: 1.8;
+    }
+
+    /* ─── DONE SCREEN ───────────────────────────────────── */
+    #screen-done {
+      display: flex; flex-direction: column;
+      align-items: center; text-align: center;
+      padding: calc(var(--safe-top) + 60px) 24px calc(40px + var(--safe-bot));
+      min-height: 100vh;
+    }
+    .done-diamond {
+      font-size: 28px; color: var(--gold); margin-bottom: 24px;
+      animation: popIn 400ms cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes popIn {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .done-eyebrow {
+      font-size: 9px; letter-spacing: 4px; color: var(--faint);
+      text-transform: uppercase;
+    }
+    .done-title {
+      font-family: var(--serif); font-style: italic;
+      font-size: 54px; color: var(--gold);
+      margin: 8px 0 36px; line-height: 1;
+    }
+    .done-vol-block {
+      width: 100%; padding: 24px 0;
+      border-top: 1px solid var(--line-soft);
+      border-bottom: 1px solid var(--line-soft);
+      margin-bottom: 20px;
+    }
+    .done-vol-num {
+      font-family: var(--serif); font-size: 52px; color: var(--gold);
+    }
+    .done-vol-lbl {
+      font-size: 9px; letter-spacing: 3.5px; color: var(--faint);
+      text-transform: uppercase; margin-top: 6px;
+    }
+    .done-delta {
+      margin-top: 14px; font-size: 12px; letter-spacing: 1px;
+    }
+    .done-delta.pos { color: var(--gold); }
+    .done-delta.neg { color: #c87b6e; }
+
+    .prs-card {
+      width: 100%; background: var(--bg-card);
+      border: 1px solid var(--line-soft);
+      padding: 18px; margin-top: 12px; text-align: left;
+    }
+    .prs-hdr {
+      font-size: 9px; letter-spacing: 3px; color: var(--gold);
+      text-transform: uppercase; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .pr-item {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 9px 0; border-bottom: 1px solid var(--line-soft);
+    }
+    .pr-item:last-child { border-bottom: none; }
+    .pr-name { font-size: 12px; }
+    .pr-val  { font-family: var(--serif); font-size: 19px; color: var(--gold); }
+    .pr-prev { font-size: 10px; color: var(--faint); font-family: var(--mono); }
+
+    .done-back-btn {
+      margin-top: 40px; width: 100%;
+      background: none; border: 1px solid var(--gold); color: var(--gold);
+      padding: 17px; font-family: var(--serif); font-style: italic;
+      font-size: 16px; letter-spacing: 0.5px; cursor: pointer;
+      transition: background 150ms;
+    }
+    .done-back-btn:active { background: var(--gold-dim); }
+
+    /* ─── TOAST ──────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(10px);
+      padding: 12px 22px; font-size: 11px; letter-spacing: 1.5px;
+      font-family: var(--mono); background: var(--bg-elev);
+      border: 1px solid var(--line); color: var(--text);
+      opacity: 0; transition: opacity 200ms, transform 200ms;
+      pointer-events: none; white-space: nowrap; z-index: 999;
+    }
+    #toast.show {
+      opacity: 1; transform: translateX(-50%) translateY(0);
+    }
+    #toast.ok   { border-color: var(--gold);  color: var(--gold); }
+    #toast.err  { border-color: #c87b6e; color: #c87b6e; }
+    #toast.warn { border-color: #c9a84c; color: #d4b06e; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- LOADING -->
+  <div id="screen-loading" class="screen active">
+    <div class="load-monogram">L · W</div>
+    <div class="load-bar"></div>
+    <div class="load-label">Loading your journal</div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div id="screen-cal" class="screen to-right">
+    <div class="cal-header">
+      <div class="cal-monogram">L · W</div>
+      <div class="cal-title">Atelier</div>
+      <div class="cal-sub">Strength Journal</div>
+    </div>
+
+    <div id="today-banner" class="today-banner" data-type="push">
+      <div class="tb-eyebrow">Today</div>
+      <div class="tb-name" id="today-name">Push</div>
+      <div class="tb-cta" id="today-cta">Begin session →</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-n" id="stat-streak">0</div>
+        <div class="stat-l">Streak</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="stat-sessions">0</div>
+        <div class="stat-l">Sessions</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="stat-volume">0</div>
+        <div class="stat-l">kg lifted</div>
+      </div>
+    </div>
+
+    <div class="month-nav">
+      <button class="mnav-btn" id="prev-month">‹</button>
+      <div class="month-name" id="month-name">May 2026</div>
+      <button class="mnav-btn" id="next-month">›</button>
+    </div>
+
+    <div class="dow-row">
+      <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div>
+      <div class="dow">W</div><div class="dow">T</div><div class="dow">F</div>
+      <div class="dow">S</div>
+    </div>
+
+    <div class="cal-grid" id="cal-grid"></div>
+
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:var(--gold)"></div><span class="leg-txt">Push</span></div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--teal)"></div><span class="leg-txt">Pull</span></div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--purple)"></div><span class="leg-txt">Tri & Abs</span></div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--faint)"></div><span class="leg-txt">Rest</span></div>
+    </div>
+  </div>
+
+  <!-- WORKOUT -->
+  <div id="screen-workout" class="screen to-right">
+    <div class="wk-header">
+      <button class="back-btn" id="back-btn">‹</button>
+      <div class="wk-date-lbl" id="wk-date-lbl"></div>
+      <div class="wk-spacer"></div>
+    </div>
+    <div class="wk-hero">
+      <div class="wk-eyebrow">Session</div>
+      <div class="wk-title" id="wk-title">Push</div>
+    </div>
+    <div id="vol-card" class="vol-card" style="display:none">
+      <div class="vol-top">
+        <span class="vol-lbl">Today</span>
+        <span class="vol-num" id="vol-num">0 kg</span>
+      </div>
+      <div class="vol-track">
+        <div class="vol-fill" id="vol-fill" style="width:0%"></div>
+        <div class="vol-marker" id="vol-marker" style="left:66%">
+          <div class="vol-marker-lbl">last</div>
+        </div>
+      </div>
+      <div class="vol-bot">
+        <span class="vol-bot-lbl" id="vol-bot-lbl">Last Push</span>
+        <span class="vol-bot-num" id="vol-bot-num">0 kg</span>
+      </div>
+    </div>
+    <div class="ex-groups" id="ex-groups"></div>
+    <div class="finish-wrap">
+      <button class="finish-btn" id="finish-btn">Finish session</button>
+    </div>
+  </div>
+
+  <!-- DONE -->
+  <div id="screen-done" class="screen to-right">
+    <div class="done-diamond">◆</div>
+    <div class="done-eyebrow">Session complete</div>
+    <div class="done-title" id="done-title">Push</div>
+    <div class="done-vol-block">
+      <div class="done-vol-num" id="done-vol-num">0</div>
+      <div class="done-vol-lbl">kg total volume</div>
+      <div class="done-delta" id="done-delta"></div>
+    </div>
+    <div id="done-prs"></div>
+    <button class="done-back-btn" id="done-back-btn">Return to calendar</button>
+  </div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// SUPABASE
+// ═══════════════════════════════════════════════════════════════
+const SB_URL = 'https://yfxnjkackrhwkiqkajuy.supabase.co';
+const SB_KEY = 'sb_publishable_3FazdVW4VOkt9NSwowu0_w_fOLE-CCK';
+const SB_HDR = {
+  'apikey': SB_KEY,
+  'Authorization': `Bearer ${SB_KEY}`,
+  'Content-Type': 'application/json'
+};
+
+async function dbGetAll() {
+  const r = await fetch(`${SB_URL}/rest/v1/workouts?select=*&order=iso.asc`, { headers: SB_HDR });
+  if (!r.ok) throw new Error(`GET failed: ${r.status}`);
+  return r.json();
+}
+
+async function dbUpsert(row) {
+  const r = await fetch(`${SB_URL}/rest/v1/workouts`, {
+    method: 'POST',
+    headers: { ...SB_HDR, 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify(row)
+  });
+  if (!r.ok) {
+    const txt = await r.text();
+    throw new Error(`UPSERT failed: ${r.status} ${txt}`);
+  }
+  return r.json();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WORKOUT DEFINITIONS
+// ═══════════════════════════════════════════════════════════════
+const WORKOUTS = {
+  push: {
+    name: 'Push', color: 'var(--gold)',
+    groups: [
+      { name: 'Chest', exercises: [
+        { key: 'incline_machine',    name: 'Incline Machine' },
+        { key: 'pec_fly',            name: 'Pec Fly' },
+        { key: 'lower_chest_cable',  name: 'Lower Chest Cable' }
+      ]},
+      { name: 'Shoulder', exercises: [
+        { key: 'lateral_raise', name: 'Lateral Raise' },
+        { key: 'back_delt',     name: 'Back Delt' }
+      ]}
+    ]
+  },
+  pull: {
+    name: 'Pull', color: 'var(--teal)',
+    groups: [
+      { name: 'Back', exercises: [
+        { key: 'lat_pulldown',       name: 'Lat Pulldown' },
+        { key: 'narrow_grip_seated', name: 'Narrow Grip Seated' },
+        { key: 'tbar_row',           name: 'T-Bar Row' }
+      ]},
+      { name: 'Bicep', exercises: [
+        { key: 'peach_curl',         name: 'Peach Curl' },
+        { key: 'cross_body_hammer',  name: 'Cross Body Hammer Curl' }
+      ]}
+    ]
+  },
+  tri: {
+    name: 'Tri & Abs', color: 'var(--purple)',
+    groups: [
+      { name: 'Tricep', exercises: [
+        { key: 'cable_rope_pushdown',    name: 'Cable Rope Pushdown' },
+        { key: 'isolate_cable_pulldown', name: 'Isolate Cable Pulldown' }
+      ]},
+      { name: 'Abs', exercises: [
+        { key: 'tilted_seat_situp',  name: 'Tilted Seat Sit Up' },
+        { key: 'hanging_leg_raise',  name: 'Hanging Leg Raise' }
+      ]}
+    ]
+  },
+  rest: { name: 'Rest', color: 'var(--faint)', groups: [] }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// SCHEDULE
+// ═══════════════════════════════════════════════════════════════
+const PRESET = { '2026-05-01': 'push', '2026-05-02': 'pull', '2026-05-03': 'tri' };
+const CYCLE  = ['push', 'pull', 'tri', 'rest'];
+const CYCLE_START = new Date(2026, 4, 4); // May 4 2026
+
+function toISO(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
+function workoutTypeFor(date) {
+  const iso = toISO(date);
+  if (PRESET[iso]) return PRESET[iso];
+  const d = new Date(date); d.setHours(0,0,0,0);
+  const s = new Date(CYCLE_START); s.setHours(0,0,0,0);
+  if (d < s) return null;
+  const days = Math.floor((d - s) / 86400000);
+  return CYCLE[days % 4];
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let db = {};           // { iso: row }
+let calCursor = null;  // first-of-month Date
+let activeDate = null; // Date being logged
+let activeSets = {};   // { key: [{w,r},{w,r},{w,r}] }
+let lastSameRow = null;// previous same-type completed row
+
+// ═══════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════
+function calcVolume(sets) {
+  if (!sets) return 0;
+  let v = 0;
+  Object.values(sets).forEach(arr => arr.forEach(s => {
+    v += (parseFloat(s.w) || 0) * (parseInt(s.r) || 0);
+  }));
+  return v;
+}
+
+function emptySets(type) {
+  const out = {};
+  (WORKOUTS[type]?.groups || []).forEach(g => {
+    g.exercises.forEach(ex => {
+      out[ex.key] = [{w:'',r:''},{w:'',r:''},{w:'',r:''}];
+    });
+  });
+  return out;
+}
+
+function findExName(type, key) {
+  for (const g of (WORKOUTS[type]?.groups || [])) {
+    for (const ex of g.exercises) {
+      if (ex.key === key) return ex.name;
+    }
+  }
+  return key;
+}
+
+function calcStreak() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  let streak = 0;
+  const cursor = new Date(today);
+  for (let i = 0; i < 365; i++) {
+    const iso = toISO(cursor);
+    const type = workoutTypeFor(cursor);
+    if (type === 'rest') { cursor.setDate(cursor.getDate() - 1); continue; }
+    if (db[iso]?.done) { streak++; cursor.setDate(cursor.getDate() - 1); }
+    else break;
+  }
+  return streak;
+}
+
+function showToast(msg, kind = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${kind}`;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = ''; }, 2400);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN TRANSITIONS
+// ═══════════════════════════════════════════════════════════════
+const screens = ['loading', 'cal', 'workout', 'done'];
+function goTo(name, dir = 'forward') {
+  screens.forEach(id => {
+    const el = document.getElementById(`screen-${id}`);
+    if (!el) return;
+    if (id === name) {
+      el.classList.add('active');
+      el.classList.remove('to-left', 'to-right');
+      el.scrollTop = 0;
+    } else {
+      el.classList.remove('active');
+      el.classList.add(dir === 'forward' ? 'to-left' : 'to-right');
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CALENDAR RENDER
+// ═══════════════════════════════════════════════════════════════
+function renderCalendar() {
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // Update today banner
+  const todayType = workoutTypeFor(today);
+  const banner = document.getElementById('today-banner');
+  const todayRow = db[toISO(today)];
+  banner.dataset.type = todayType || 'rest';
+  document.getElementById('today-name').textContent = WORKOUTS[todayType]?.name || 'Rest';
+  document.getElementById('today-cta').textContent =
+    todayRow?.done ? 'View session →' :
+    todayType === 'rest' ? 'Recovery day' : 'Begin session →';
+  if (todayType && todayType !== 'rest') {
+    banner.onclick = () => openWorkout(today);
+  } else {
+    banner.onclick = null;
+  }
+
+  // Stats
+  const completed = Object.values(db).filter(r => r.done);
+  const totalVol = completed.reduce((a, r) => a + calcVolume(r.sets), 0);
+  document.getElementById('stat-streak').textContent = calcStreak();
+  document.getElementById('stat-sessions').textContent = completed.length;
+  document.getElementById('stat-volume').textContent =
+    totalVol >= 1000 ? `${(totalVol/1000).toFixed(1)}k` : Math.round(totalVol);
+
+  // Month grid
+  const y = calCursor.getFullYear();
+  const m = calCursor.getMonth();
+  document.getElementById('month-name').textContent =
+    calCursor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  const firstDow = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  for (let i = 0; i < firstDow; i++) {
+    const blank = document.createElement('div');
+    blank.className = 'cal-cell blank';
+    grid.appendChild(blank);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(y, m, d);
+    const iso  = toISO(date);
+    const type = workoutTypeFor(date);
+    const row  = db[iso];
+    const isToday = date.getTime() === today.getTime();
+    const isRest  = type === 'rest';
+    const isDone  = !!row?.done;
+
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell' +
+      (isToday ? ' is-today' : '') +
+      (isDone  ? ' is-done'  : '') +
+      (isRest  ? ' rest'     : '');
+    if (isDone && type) cell.dataset.type = type;
+
+    const num = document.createElement('div');
+    num.className = 'cell-num' + (isDone ? ' done-num' : '');
+    if (isDone && type) num.dataset.type = type;
+    num.textContent = d;
+    cell.appendChild(num);
+
+    if (type && type !== 'rest') {
+      const dot = document.createElement('div');
+      dot.className = 'cell-dot';
+      dot.dataset.type = type;
+      cell.appendChild(dot);
+    }
+
+    if (!isRest && type) {
+      const capturedDate = new Date(date);
+      cell.addEventListener('click', () => openWorkout(capturedDate));
+    }
+
+    grid.appendChild(cell);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WORKOUT SCREEN
+// ═══════════════════════════════════════════════════════════════
+function openWorkout(date) {
+  activeDate = date;
+  const iso  = toISO(date);
+  const type = workoutTypeFor(date);
+  const wk   = WORKOUTS[type];
+  const existing = db[iso];
+
+  // Title
+  document.getElementById('wk-date-lbl').textContent =
+    date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
+  const titleEl = document.getElementById('wk-title');
+  titleEl.textContent = wk.name;
+  titleEl.style.color = wk.color;
+
+  // Rest day
+  if (!wk.groups || wk.groups.length === 0) {
+    document.getElementById('ex-groups').innerHTML = `
+      <div class="rest-screen">
+        <div class="rest-glyph">◇</div>
+        <div class="rest-title">Rest</div>
+        <div class="rest-body">Recover.<br>Eat well. Sleep deeply.</div>
+      </div>`;
+    document.querySelector('.finish-wrap').style.display = 'none';
+    document.getElementById('vol-card').style.display = 'none';
+    goTo('workout', 'forward');
+    return;
+  }
+  document.querySelector('.finish-wrap').style.display = '';
+
+  // Seed sets
+  activeSets = existing?.sets
+    ? JSON.parse(JSON.stringify(existing.sets))
+    : emptySets(type);
+
+  // Find last same-type completed row
+  lastSameRow = Object.values(db)
+    .filter(r => r.type === type && r.done && r.iso < iso)
+    .sort((a, b) => a.iso < b.iso ? 1 : -1)[0] || null;
+
+  // Volume bar
+  const volCard = document.getElementById('vol-card');
+  if (lastSameRow) {
+    volCard.style.display = '';
+    document.getElementById('vol-bot-lbl').textContent = `Last ${wk.name}`;
+    updateVolBar();
+  } else {
+    volCard.style.display = 'none';
+  }
+
+  // Build exercise cards
+  buildExerciseCards(type);
+  goTo('workout', 'forward');
+}
+
+function updateVolBar() {
+  const v = calcVolume(activeSets);
+  const lv = lastSameRow ? calcVolume(lastSameRow.sets) : 0;
+  document.getElementById('vol-num').textContent = `${Math.round(v).toLocaleString()} kg`;
+  document.getElementById('vol-bot-num').textContent = `${Math.round(lv).toLocaleString()} kg`;
+  const pct = lv ? Math.min(130, (v / lv) * 100) : 0;
+  document.getElementById('vol-fill').style.width = pct + '%';
+}
+
+function buildExerciseCards(type) {
+  const wk = WORKOUTS[type];
+  const container = document.getElementById('ex-groups');
+  container.innerHTML = '';
+
+  // best previous weight per key
+  const bestPrev = {};
+  if (lastSameRow?.sets) {
+    Object.entries(lastSameRow.sets).forEach(([k, arr]) => {
+      bestPrev[k] = Math.max(0, ...arr.map(s => parseFloat(s.w) || 0));
+    });
+  }
+
+  wk.groups.forEach(grp => {
+    const grpEl = document.createElement('div');
+    grpEl.className = 'grp';
+    grpEl.innerHTML = `<div class="grp-name">${grp.name}</div>`;
+
+    grp.exercises.forEach(ex => {
+      const lastArr = lastSameRow?.sets?.[ex.key] || [];
+      const card = document.createElement('div');
+      card.className = 'ex-card';
+
+      let rows = '';
+      for (let i = 0; i < 3; i++) {
+        const s = activeSets[ex.key]?.[i] || {w:'', r:''};
+        const ls = lastArr[i];
+        const prevStr = ls?.w ? `${ls.w}×${ls.r || '—'}` : '—';
+        rows += `
+          <tr class="set-row" data-key="${ex.key}" data-idx="${i}">
+            <td>${i + 1}</td>
+            <td><input class="set-input" type="number" inputmode="decimal" placeholder="—" value="${s.w}" data-field="w" /></td>
+            <td><input class="set-input" type="number" inputmode="numeric" placeholder="—" value="${s.r}" data-field="r" /></td>
+            <td class="set-prev-cell">${prevStr}</td>
+          </tr>`;
+      }
+
+      card.innerHTML = `
+        <div class="ex-name">${ex.name}</div>
+        <table class="set-table">
+          <thead>
+            <tr>
+              <td></td>
+              <td>kg</td>
+              <td>reps</td>
+              <td style="text-align:right">last</td>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+
+      // Input listeners
+      card.querySelectorAll('.set-input').forEach(input => {
+        input.addEventListener('input', e => {
+          const row = e.target.closest('.set-row');
+          const key = row.dataset.key;
+          const idx = parseInt(row.dataset.idx);
+          const field = e.target.dataset.field;
+          activeSets[key][idx][field] = e.target.value;
+
+          // PR highlight
+          const w = parseFloat(activeSets[key][idx].w) || 0;
+          const prev = bestPrev[key] || 0;
+          row.classList.toggle('is-pr', w > 0 && prev > 0 && w > prev);
+
+          updateVolBar();
+        });
+      });
+
+      grpEl.appendChild(card);
+    });
+
+    container.appendChild(grpEl);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FINISH WORKOUT
+// ═══════════════════════════════════════════════════════════════
+async function finishWorkout() {
+  const iso  = toISO(activeDate);
+  const type = workoutTypeFor(activeDate);
+  const wk   = WORKOUTS[type];
+
+  const row = { iso, type, sets: activeSets, done: true, ts: Date.now() };
+
+  // Optimistic update
+  db[iso] = row;
+  cacheDB();
+
+  // PRs
+  const bestPrev = {};
+  if (lastSameRow?.sets) {
+    Object.entries(lastSameRow.sets).forEach(([k, arr]) => {
+      bestPrev[k] = Math.max(0, ...arr.map(s => parseFloat(s.w) || 0));
+    });
+  }
+  const prs = [];
+  Object.entries(activeSets).forEach(([k, arr]) => {
+    const best = Math.max(0, ...arr.map(s => parseFloat(s.w) || 0));
+    const prev = bestPrev[k] || 0;
+    if (best > 0 && best > prev) {
+      prs.push({ name: findExName(type, k), weight: best, prev });
+    }
+  });
+
+  const vol = calcVolume(activeSets);
+  const lastVol = lastSameRow ? calcVolume(lastSameRow.sets) : 0;
+
+  // Render done screen
+  document.getElementById('done-title').textContent = wk.name;
+  document.getElementById('done-title').style.color = wk.color;
+  document.getElementById('done-vol-num').textContent = Math.round(vol).toLocaleString();
+
+  const deltaEl = document.getElementById('done-delta');
+  if (lastVol > 0) {
+    const diff = vol - lastVol;
+    const pct  = ((diff / lastVol) * 100).toFixed(1);
+    deltaEl.textContent = `${diff >= 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(0)} kg (${diff >= 0 ? '+' : ''}${pct}%) vs last`;
+    deltaEl.className = `done-delta ${diff >= 0 ? 'pos' : 'neg'}`;
+  } else {
+    deltaEl.textContent = '';
+  }
+
+  const prsEl = document.getElementById('done-prs');
+  if (prs.length) {
+    prsEl.innerHTML = `
+      <div class="prs-card">
+        <div class="prs-hdr"><span>★</span> New personal bests</div>
+        ${prs.map(pr => `
+          <div class="pr-item">
+            <span class="pr-name">${pr.name}</span>
+            <span class="pr-val">${pr.weight} kg <span class="pr-prev">(was ${pr.prev || '—'})</span></span>
+          </div>`).join('')}
+      </div>`;
+  } else {
+    prsEl.innerHTML = '';
+  }
+
+  goTo('done', 'forward');
+  renderCalendar();
+
+  // Save to Supabase
+  try {
+    await dbUpsert(row);
+    cacheDB();
+    showToast('Saved ✓', 'ok');
+  } catch (e) {
+    console.error(e);
+    showToast('Save failed — will retry', 'err');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CACHE (offline fallback)
+// ═══════════════════════════════════════════════════════════════
+function cacheDB() {
+  try { localStorage.setItem('gym_db', JSON.stringify(db)); } catch (e) {}
+}
+function loadCache() {
+  try {
+    const c = localStorage.getItem('gym_db');
+    if (c) db = JSON.parse(c);
+  } catch (e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+async function init() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  calCursor = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  // Load cache immediately for instant UI
+  loadCache();
+
+  // Fetch from Supabase
+  try {
+    const rows = await dbGetAll();
+    db = {};
+    rows.forEach(r => { db[r.iso] = r; });
+    cacheDB();
+  } catch (e) {
+    console.error('Supabase load failed:', e);
+    if (Object.keys(db).length > 0) {
+      showToast('Offline — showing cached data', 'warn');
+    } else {
+      showToast('Connection error', 'err');
+    }
+  }
+
+  renderCalendar();
+  goTo('cal', 'forward');
+
+  // Month nav
+  document.getElementById('prev-month').addEventListener('click', () => {
+    calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth() - 1, 1);
+    renderCalendar();
+  });
+  document.getElementById('next-month').addEventListener('click', () => {
+    calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth() + 1, 1);
+    renderCalendar();
+  });
+
+  // Swipe to change month on calendar
+  let swipeX = null;
+  document.getElementById('screen-cal').addEventListener('touchstart', e => {
+    swipeX = e.touches[0].clientX;
+  }, { passive: true });
+  document.getElementById('screen-cal').addEventListener('touchend', e => {
+    if (swipeX === null) return;
+    const dx = e.changedTouches[0].clientX - swipeX;
+    if (Math.abs(dx) > 60) {
+      calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth() + (dx < 0 ? 1 : -1), 1);
+      renderCalendar();
+    }
+    swipeX = null;
+  }, { passive: true });
+
+  // Back button
+  document.getElementById('back-btn').addEventListener('click', () => {
+    goTo('cal', 'back');
+  });
+
+  // Finish
+  document.getElementById('finish-btn').addEventListener('click', finishWorkout);
+
+  // Done → back to cal
+  document.getElementById('done-back-btn').addEventListener('click', () => {
+    goTo('cal', 'back');
+  });
+}
+
+init();
+</script>
+</body>
+</html>
