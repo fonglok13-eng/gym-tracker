@@ -283,6 +283,7 @@ let currentAccent= '';
 let calYear      = 0;
 let calMonth     = 0;
 let escaped      = false;
+let saveTimer    = null;
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 function isoToday() {
@@ -531,6 +532,19 @@ function refreshVolCard(){
   fillEl.style.width=Math.min(currVol/maxVol*100,100)+'%';
 }
 
+function autoSaveProgress(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    if(!currentDate)return;
+    const sets=collectSets();
+    if(!cache[currentDate])cache[currentDate]={};
+    cache[currentDate].type=currentType;
+    cache[currentDate].sets=sets;
+    if(cache[currentDate].done===undefined)cache[currentDate].done=false;
+    saveCache();
+  },800);
+}
+
 function buildExercises(){
   const container=document.getElementById('ex-groups');
   container.innerHTML='';
@@ -569,6 +583,7 @@ function buildExercises(){
 
       const tbody=document.createElement('tbody');
       const kgInputs=[];
+      const rpInputs=[];
 
       for(let i=0;i<3;i++){
         const sv=savedSets[i]||{};
@@ -586,6 +601,7 @@ function buildExercises(){
         tr.appendChild(td('set-last',last));
         tbody.appendChild(tr);
         kgInputs.push(kgInp);
+        rpInputs.push(rpInp);
       }
 
       tbl.appendChild(tbody);
@@ -598,6 +614,7 @@ function buildExercises(){
       kgInputs[0].addEventListener('input',()=>{
         checkPR(kgInputs[0],key);
         refreshVolCard();
+        autoSaveProgress();
         clearTimeout(afTimer);
         afTimer=setTimeout(()=>{
           const v=kgInputs[0].value.trim();
@@ -605,10 +622,12 @@ function buildExercises(){
           if(!kgInputs[1].value){kgInputs[1].value=v;checkPR(kgInputs[1],key);}
           if(!kgInputs[2].value){kgInputs[2].value=v;checkPR(kgInputs[2],key);}
           refreshVolCard();
+          autoSaveProgress();
         },700);
       });
-      kgInputs[1].addEventListener('input',()=>{checkPR(kgInputs[1],key);refreshVolCard();});
-      kgInputs[2].addEventListener('input',()=>{checkPR(kgInputs[2],key);refreshVolCard();});
+      kgInputs[1].addEventListener('input',()=>{checkPR(kgInputs[1],key);refreshVolCard();autoSaveProgress();});
+      kgInputs[2].addEventListener('input',()=>{checkPR(kgInputs[2],key);refreshVolCard();autoSaveProgress();});
+      rpInputs.forEach(inp=>inp.addEventListener('input',autoSaveProgress));
     });
   });
 }
