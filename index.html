@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Atelier" />
   <meta name="theme-color" content="#1a1a1a" />
   <title>Atelier — Strength Journal</title>
-  <!-- VERSION: v2-finish-fix-2026-05-09 -->
+  <!-- VERSION: v3-mobile-rewrite-2026-05-09 -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -45,28 +45,25 @@
 
     /* ─── APP SHELL ─────────────────────────────────────── */
     #app {
-      position: relative;
       width: 100%;
       max-width: 430px;
       margin: 0 auto;
       min-height: 100vh;
-      overflow: hidden;
     }
 
     /* ─── SCREENS ───────────────────────────────────────── */
     .screen {
-      position: absolute;
-      inset: 0;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      transition: transform 300ms cubic-bezier(.4,0,.2,1), opacity 250ms;
-      will-change: transform, opacity;
+      display: none;
       background: var(--bg);
       min-height: 100vh;
+      animation: fadeIn 200ms ease;
     }
-    .screen.active  { transform: translateX(0);    opacity: 1; pointer-events: all; }
-    .screen.to-left { transform: translateX(-40px); opacity: 0; pointer-events: none; }
-    .screen.to-right{ transform: translateX(40px);  opacity: 0; pointer-events: none; }
+    .screen.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
     /* ─── LOADING ────────────────────────────────────────── */
     #screen-loading {
@@ -465,7 +462,7 @@
 
     /* ─── TOAST ──────────────────────────────────────────── */
     #toast {
-      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(10px);
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(10px);
       padding: 12px 22px; font-size: 11px; letter-spacing: 1.5px;
       font-family: var(--mono); background: var(--bg-elev);
       border: 1px solid var(--line); color: var(--text);
@@ -491,7 +488,7 @@
   </div>
 
   <!-- CALENDAR -->
-  <div id="screen-cal" class="screen to-right">
+  <div id="screen-cal" class="screen">
     <div class="cal-header">
       <div class="cal-monogram">L · W</div>
       <div class="cal-title">Atelier</div>
@@ -542,7 +539,7 @@
   </div>
 
   <!-- WORKOUT -->
-  <div id="screen-workout" class="screen to-right">
+  <div id="screen-workout" class="screen">
     <div class="wk-header">
       <button class="back-btn" id="back-btn">‹</button>
       <div class="wk-date-lbl" id="wk-date-lbl"></div>
@@ -575,7 +572,7 @@
   </div>
 
   <!-- DONE -->
-  <div id="screen-done" class="screen to-right">
+  <div id="screen-done" class="screen">
     <div class="done-diamond">◆</div>
     <div class="done-eyebrow">Session complete</div>
     <div class="done-title" id="done-title">Push</div>
@@ -760,19 +757,18 @@ function showToast(msg, kind = 'ok') {
 // SCREEN TRANSITIONS
 // ═══════════════════════════════════════════════════════════════
 const screens = ['loading', 'cal', 'workout', 'done'];
-function goTo(name, dir = 'forward') {
+function goTo(name) {
   screens.forEach(id => {
     const el = document.getElementById(`screen-${id}`);
     if (!el) return;
     if (id === name) {
       el.classList.add('active');
-      el.classList.remove('to-left', 'to-right');
-      el.scrollTop = 0;
     } else {
       el.classList.remove('active');
-      el.classList.add(dir === 'forward' ? 'to-left' : 'to-right');
     }
   });
+  // Scroll page to top (not the screen container)
+  window.scrollTo(0, 0);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -887,7 +883,7 @@ function openWorkout(date) {
       </div>`;
     document.querySelector('.finish-wrap').style.display = 'none';
     document.getElementById('vol-card').style.display = 'none';
-    goTo('workout', 'forward');
+    goTo('workout');
     return;
   }
   document.querySelector('.finish-wrap').style.display = '';
@@ -914,7 +910,7 @@ function openWorkout(date) {
 
   // Build exercise cards
   buildExerciseCards(type);
-  goTo('workout', 'forward');
+  goTo('workout');
 }
 
 function updateVolBar() {
@@ -978,8 +974,8 @@ function buildExerciseCards(type) {
         </table>`;
 
       // Input listeners
+      let autofillTimers = {}; // per-exercise debounce timers
       card.querySelectorAll('.set-input').forEach(input => {
-        // Live: update state + PR highlight on every keystroke
         input.addEventListener('input', e => {
           const row = e.target.closest('.set-row');
           const key = row.dataset.key;
@@ -993,30 +989,28 @@ function buildExerciseCards(type) {
           row.classList.toggle('is-pr', w > 0 && prev > 0 && w > prev);
 
           updateVolBar();
-        });
 
-        // On blur (tap away): if it's set 1 kg, copy to empty sets below
-        input.addEventListener('blur', e => {
-          const row = e.target.closest('.set-row');
-          const key = row.dataset.key;
-          const idx = parseInt(row.dataset.idx);
-          const field = e.target.dataset.field;
-          if (field !== 'w' || idx !== 0) return;
-          if (e.target.value === '') return;
-
-          const tbody = row.closest('tbody');
-          tbody.querySelectorAll('.set-row').forEach((r, i) => {
-            if (i === 0) return;
-            const wInput = r.querySelector('[data-field="w"]');
-            if (wInput && wInput.value === '') {
-              wInput.value = e.target.value;
-              activeSets[key][i].w = e.target.value;
-              const wv = parseFloat(e.target.value) || 0;
-              const pv = bestPrev[key] || 0;
-              r.classList.toggle('is-pr', wv > 0 && pv > 0 && wv > pv);
-            }
-          });
-          updateVolBar();
+          // Auto-fill: 700ms after user stops typing in set 1 kg, copy to empty sets
+          if (field === 'w' && idx === 0) {
+            clearTimeout(autofillTimers[key]);
+            autofillTimers[key] = setTimeout(() => {
+              const val = activeSets[key][0].w;
+              if (val === '' || val == null) return;
+              const tbody = row.closest('tbody');
+              tbody.querySelectorAll('.set-row').forEach((r, i) => {
+                if (i === 0) return;
+                const wInput = r.querySelector('[data-field="w"]');
+                if (wInput && wInput.value === '') {
+                  wInput.value = val;
+                  activeSets[key][i].w = val;
+                  const wv = parseFloat(val) || 0;
+                  const pv = bestPrev[key] || 0;
+                  r.classList.toggle('is-pr', wv > 0 && pv > 0 && wv > pv);
+                }
+              });
+              updateVolBar();
+            }, 700);
+          }
         });
       });
 
@@ -1090,7 +1084,7 @@ async function finishWorkout() {
     prsEl.innerHTML = '';
   }
 
-  goTo('done', 'forward');
+  goTo('done');
   renderCalendar();
 
   // Save to Supabase
@@ -1143,7 +1137,7 @@ async function init() {
   }
 
   renderCalendar();
-  goTo('cal', 'forward');
+  goTo('cal');
 
   // Month nav
   document.getElementById('prev-month').addEventListener('click', () => {
@@ -1172,7 +1166,7 @@ async function init() {
 
   // Back button
   document.getElementById('back-btn').addEventListener('click', () => {
-    goTo('cal', 'back');
+    goTo('cal');
   });
 
   // Finish
@@ -1180,7 +1174,7 @@ async function init() {
 
   // Done → back to cal
   document.getElementById('done-back-btn').addEventListener('click', () => {
-    goTo('cal', 'back');
+    goTo('cal');
   });
 }
 
