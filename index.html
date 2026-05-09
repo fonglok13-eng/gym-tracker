@@ -1,1182 +1,783 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Atelier" />
-  <meta name="theme-color" content="#1a1a1a" />
-  <title>Atelier — Strength Journal</title>
-  <!-- VERSION: v3-mobile-rewrite-2026-05-09 -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
-  <style>
-    /* ─── RESET & ROOT ─────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
-    html { height: 100%; background: #1a1a1a; }
-    body {
-      height: 100%; background: #1a1a1a; color: #ededed;
-      font-family: 'DM Mono', ui-monospace, monospace;
-      -webkit-font-smoothing: antialiased;
-      overscroll-behavior: none;
-    }
+<!-- VERSION: v1-atelier -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a1a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Atelier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#1a1a1a; --surface:#1e1e1e; --elevated:#232323;
+  --text:#ededed; --dim:#888; --faint:#4e4e4e; --line:#2e2e2e;
+  --gold:#c9a84c; --teal:#7fb3a8; --purple:#9d8bb5; --error:#c87b6e;
+  --accent:#c9a84c;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'DM Mono',monospace;font-size:14px;
+  padding-top:var(--safe-top);padding-bottom:var(--safe-bottom);
+  -webkit-font-smoothing:antialiased;
+}
+.screen{display:none;}
+.screen.active{display:block;}
 
-    :root {
-      --bg:        #1a1a1a;
-      --bg-elev:   #232323;
-      --bg-card:   #1e1e1e;
-      --line:      #2e2e2e;
-      --line-soft: #252525;
-      --text:      #ededed;
-      --dim:       #888;
-      --faint:     #4e4e4e;
-      --gold:      #c9a84c;
-      --gold-dim:  rgba(201,168,76,0.12);
-      --teal:      #7fb3a8;
-      --purple:    #9d8bb5;
-      --serif:     'Playfair Display', Georgia, serif;
-      --mono:      'DM Mono', ui-monospace, monospace;
-      --radius:    0px;
-      --safe-top:  env(safe-area-inset-top, 0px);
-      --safe-bot:  env(safe-area-inset-bottom, 0px);
-    }
+/* ── LOADING ── */
+#screen-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px;}
+#screen-loading.active{display:flex;}
+.ld-eye{font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--faint);}
+.ld-title{font-family:'Playfair Display',serif;font-style:italic;font-size:30px;color:var(--gold);}
+.ld-bar{width:120px;height:1px;background:var(--line);position:relative;overflow:hidden;}
+.ld-bar::after{content:'';position:absolute;left:-100%;top:0;width:100%;height:100%;background:var(--gold);animation:lbar 1.4s ease-in-out infinite;}
+@keyframes lbar{0%{left:-100%}100%{left:100%}}
+#ld-status{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);}
 
-    /* ─── APP SHELL ─────────────────────────────────────── */
-    #app {
-      width: 100%;
-      max-width: 430px;
-      margin: 0 auto;
-      min-height: 100vh;
-    }
+/* ── CALENDAR ── */
+#screen-calendar{padding-bottom:48px;}
+.cal-header{padding:20px 20px 16px;border-bottom:1px solid var(--line);}
+.monogram{font-family:'Playfair Display',serif;font-size:11px;color:var(--gold);letter-spacing:4px;text-transform:uppercase;margin-bottom:4px;}
+.app-title{font-family:'Playfair Display',serif;font-style:italic;font-size:26px;color:var(--text);line-height:1;}
+.app-sub{font-size:10px;color:var(--dim);letter-spacing:3px;text-transform:uppercase;margin-top:4px;}
 
-    /* ─── SCREENS ───────────────────────────────────────── */
-    .screen {
-      display: none;
-      background: var(--bg);
-      min-height: 100vh;
-      animation: fadeIn 200ms ease;
-    }
-    .screen.active { display: block; }
+.today-card{margin:16px 20px;border:1px solid var(--line);border-left-width:3px;background:var(--surface);padding:14px 16px;cursor:pointer;}
+.today-card:active{background:var(--elevated);}
+.today-eye{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:5px;}
+.today-type{font-family:'Playfair Display',serif;font-style:italic;font-size:22px;line-height:1.1;}
+.today-date{font-size:10px;color:var(--dim);margin-top:4px;letter-spacing:1px;}
+.today-tap{font-size:9px;letter-spacing:2px;text-transform:uppercase;margin-top:10px;}
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:0 20px 20px;}
+.stat-cell{padding:12px 0;text-align:center;border-right:1px solid var(--line);}
+.stat-cell:last-child{border-right:none;}
+.stat-val{font-family:'Playfair Display',serif;font-size:22px;}
+.stat-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-top:2px;}
 
-    /* ─── LOADING ────────────────────────────────────────── */
-    #screen-loading {
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      min-height: 100vh; gap: 22px;
-    }
-    .load-monogram {
-      font-family: var(--serif); font-size: 30px;
-      letter-spacing: 6px; color: var(--gold);
-      font-weight: 500;
-    }
-    .load-bar {
-      width: 48px; height: 1px;
-      background: var(--line); position: relative; overflow: hidden;
-    }
-    .load-bar::after {
-      content: ''; position: absolute; inset: 0;
-      background: var(--gold);
-      animation: sweep 1.4s ease-in-out infinite;
-    }
-    @keyframes sweep {
-      0%   { transform: translateX(-100%); }
-      100% { transform: translateX(200%); }
-    }
-    .load-label {
-      font-size: 10px; letter-spacing: 3px; color: var(--faint);
-      text-transform: uppercase;
-    }
+.month-nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px 12px;}
+.mnav-btn{background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;font-family:'DM Mono',monospace;}
+.mnav-btn:active{color:var(--text);}
+.month-lbl{font-family:'Playfair Display',serif;font-size:15px;letter-spacing:1px;}
 
-    /* ─── CALENDAR SCREEN ───────────────────────────────── */
-    #screen-cal { padding-bottom: calc(24px + var(--safe-bot)); }
+.cal-wrap{padding:0 20px;}
+.dow-row{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px;}
+.dow{text-align:center;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--faint);padding:4px 0;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-cell{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:1px solid transparent;}
+.cal-cell.tappable{cursor:pointer;}
+.cal-cell.is-today{border-color:var(--gold);}
+.cal-num{font-family:'DM Mono',monospace;font-size:12px;color:var(--dim);line-height:1;}
+.cal-cell.is-today .cal-num{color:var(--gold);}
+.cal-dot{width:4px;height:4px;border-radius:50%;}
 
-    .cal-header {
-      padding: calc(var(--safe-top) + 28px) 24px 22px;
-      text-align: center;
-      border-bottom: 1px solid var(--line-soft);
-    }
-    .cal-monogram {
-      font-family: var(--serif); font-size: 12px;
-      letter-spacing: 8px; color: var(--gold); font-weight: 500;
-    }
-    .cal-title {
-      font-family: var(--serif); font-style: italic;
-      font-size: 28px; margin-top: 6px; letter-spacing: 0.3px;
-    }
-    .cal-sub {
-      font-size: 9px; letter-spacing: 3.5px; color: var(--faint);
-      text-transform: uppercase; margin-top: 5px;
-    }
+.legend{display:flex;gap:14px;padding:16px 20px 0;flex-wrap:wrap;}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);}
+.leg-dot{width:6px;height:6px;border-radius:50%;}
 
-    /* Today banner */
-    .today-banner {
-      margin: 20px 20px 0;
-      padding: 18px 20px;
-      background: var(--bg-card);
-      border: 1px solid var(--line);
-      border-left: 3px solid var(--gold);
-      cursor: pointer;
-      transition: background 180ms, transform 180ms;
-      -webkit-user-select: none;
-    }
-    .today-banner:active { transform: scale(0.985); background: var(--bg-elev); }
-    .today-banner[data-type="pull"] { border-left-color: var(--teal); }
-    .today-banner[data-type="tri"]  { border-left-color: var(--purple); }
-    .today-banner[data-type="rest"] { border-left-color: var(--faint); cursor: default; }
-    .tb-eyebrow {
-      font-size: 9px; letter-spacing: 3px; color: var(--faint);
-      text-transform: uppercase;
-    }
-    .tb-name {
-      font-family: var(--serif); font-style: italic;
-      font-size: 30px; margin-top: 4px; color: var(--gold);
-    }
-    .today-banner[data-type="pull"] .tb-name { color: var(--teal); }
-    .today-banner[data-type="tri"]  .tb-name { color: var(--purple); }
-    .today-banner[data-type="rest"] .tb-name { color: var(--faint); }
-    .tb-cta {
-      font-size: 11px; color: var(--faint);
-      margin-top: 7px; letter-spacing: 1px;
-    }
+/* ── WORKOUT ── */
+#screen-workout{padding-bottom:40px;}
+.wo-header{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:12px;}
+.back-btn{background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer;padding:0;margin-top:4px;line-height:1;font-family:'DM Mono',monospace;}
+.back-btn:active{color:var(--text);}
+.wo-header-text{flex:1;}
+.wo-date-lbl{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:2px;}
+.wo-session-eye{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);}
+.wo-type{font-family:'Playfair Display',serif;font-style:italic;font-size:24px;line-height:1.1;}
 
-    /* Stats row */
-    .stats-row {
-      display: grid; grid-template-columns: 1fr 1fr 1fr;
-      margin: 22px 20px;
-      border-top: 1px solid var(--line-soft);
-      border-bottom: 1px solid var(--line-soft);
-      padding: 16px 0;
-    }
-    .stat {
-      text-align: center;
-      border-right: 1px solid var(--line-soft);
-    }
-    .stat:last-child { border-right: none; }
-    .stat-n {
-      font-family: var(--serif); font-size: 24px; color: var(--gold);
-    }
-    .stat-l {
-      font-size: 8px; letter-spacing: 2.5px; color: var(--faint);
-      text-transform: uppercase; margin-top: 3px;
-    }
+.vol-card{margin:16px 20px;border:1px solid var(--line);border-left-width:3px;background:var(--surface);padding:14px 16px;}
+.vol-eye{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:8px;}
+.vol-today-num{font-family:'Playfair Display',serif;font-size:28px;line-height:1;}
+.vol-bar-wrap{margin:10px 0 6px;height:3px;background:var(--line);position:relative;}
+.vol-bar-fill{height:100%;transition:width 0.3s ease;position:absolute;top:0;left:0;}
+.vol-bar-marker{position:absolute;top:-4px;width:1px;height:11px;background:var(--dim);}
+.vol-sub{font-size:10px;color:var(--dim);letter-spacing:1px;}
 
-    /* Month nav */
-    .month-nav {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 20px; margin-bottom: 10px;
-    }
-    .mnav-btn {
-      background: none; border: 1px solid var(--line);
-      color: var(--text); width: 34px; height: 34px;
-      font-size: 20px; cursor: pointer; font-family: var(--serif);
-      display: flex; align-items: center; justify-content: center;
-      transition: background 150ms;
-    }
-    .mnav-btn:active { background: var(--bg-elev); }
-    .month-name {
-      font-family: var(--serif); font-style: italic;
-      font-size: 19px; letter-spacing: 0.3px;
-    }
+.ex-groups{padding:0 20px;}
+.group-hdr{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);padding:16px 0 8px;border-bottom:1px solid var(--line);margin-bottom:8px;}
+.ex-card{background:var(--surface);border:1px solid var(--line);margin-bottom:8px;padding:12px 12px 0;}
+.ex-name{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text);margin-bottom:10px;}
+.sets-tbl{width:100%;border-collapse:collapse;}
+.sets-tbl th{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--faint);font-weight:400;padding:0 0 6px;text-align:left;}
+.sets-tbl td{padding:3px 0;}
+.set-num{font-size:11px;color:var(--faint);width:22px;}
+.set-input{
+  background:var(--elevated);border:1px solid var(--line);
+  color:var(--text);font-family:'DM Mono',monospace;font-size:14px;
+  padding:7px 6px;width:64px;text-align:center;
+  -webkit-appearance:none;appearance:none;border-radius:0;
+}
+.set-input:focus{outline:none;border-color:var(--accent);}
+.set-input.pr{border-color:var(--gold);color:var(--gold);}
+.set-x{font-size:10px;color:var(--faint);text-align:center;padding:0 4px;}
+.set-last{font-size:11px;color:var(--faint);text-align:right;padding-left:8px;}
+.sets-divider{height:1px;background:var(--line);margin:10px -12px 0;}
 
-    /* DOW row */
-    .dow-row {
-      display: grid; grid-template-columns: repeat(7, 1fr);
-      padding: 0 20px; margin-bottom: 4px;
-    }
-    .dow {
-      text-align: center; font-size: 9px; letter-spacing: 1.5px;
-      color: var(--faint); text-transform: uppercase; padding: 4px 0;
-    }
+.finish-wrap{padding:24px 20px 8px;}
+.finish-btn{
+  display:block;width:100%;padding:16px;
+  background:var(--gold);color:#1a1a1a;border:none;
+  font-family:'DM Mono',monospace;font-size:11px;
+  letter-spacing:3px;text-transform:uppercase;
+  cursor:pointer;font-weight:500;
+  box-shadow:0 0 24px rgba(201,168,76,0.18);
+}
+.finish-btn:active{opacity:0.85;}
 
-    /* Grid */
-    .cal-grid {
-      display: grid; grid-template-columns: repeat(7, 1fr);
-      gap: 2px; padding: 0 20px;
-    }
-    .cal-cell {
-      aspect-ratio: 1; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 3px;
-      background: var(--bg-card); border: 1px solid transparent;
-      cursor: pointer; position: relative;
-      transition: background 150ms;
-      -webkit-user-select: none;
-    }
-    .cal-cell.blank { background: transparent; cursor: default; border: none; }
-    .cal-cell.rest  { opacity: 0.3; cursor: default; }
-    .cal-cell:not(.blank):not(.rest):active { background: var(--bg-elev); }
-    .cal-cell.is-today {
-      background: var(--bg-elev);
-      box-shadow: inset 0 0 0 1px var(--gold);
-    }
-    .cal-cell.is-done { border-color: var(--gold); }
-    .cal-cell.is-done[data-type="pull"] { border-color: var(--teal); }
-    .cal-cell.is-done[data-type="tri"]  { border-color: var(--purple); }
-    .cell-num { font-size: 13px; }
-    .cell-num.done-num { color: var(--gold); }
-    .cell-num.done-num[data-type="pull"] { color: var(--teal); }
-    .cell-num.done-num[data-type="tri"]  { color: var(--purple); }
-    .cell-dot {
-      width: 4px; height: 4px; border-radius: 50%;
-      background: var(--gold);
-    }
-    .cell-dot[data-type="pull"] { background: var(--teal); }
-    .cell-dot[data-type="tri"]  { background: var(--purple); }
-    .cell-dot[data-type="rest"] { display: none; }
+/* ── DONE ── */
+#screen-done{padding:0 20px 48px;}
+.done-hdr{padding:32px 0 24px;border-bottom:1px solid var(--line);margin-bottom:24px;}
+.done-diamond{font-size:22px;color:var(--gold);margin-bottom:8px;}
+.done-eye{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;}
+.done-type{font-family:'Playfair Display',serif;font-style:italic;font-size:28px;}
+.done-vol{font-family:'Playfair Display',serif;font-size:42px;line-height:1;margin-bottom:4px;}
+.done-vol-lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);}
+.done-delta{font-size:12px;color:var(--dim);margin-top:6px;}
+.done-delta.up{color:var(--teal);}
+.done-delta.dn{color:var(--error);}
+.pr-card{border:1px solid var(--gold);background:var(--surface);padding:14px 16px;margin:24px 0;}
+.pr-eye{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+.pr-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--line);}
+.pr-row:last-child{border-bottom:none;}
+.pr-name{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text);}
+.pr-val{font-size:13px;color:var(--gold);}
+.pr-prev{font-size:10px;color:var(--faint);margin-left:4px;}
+.return-btn{
+  display:block;width:100%;padding:16px;
+  background:none;color:var(--dim);border:1px solid var(--line);
+  font-family:'DM Mono',monospace;font-size:11px;
+  letter-spacing:3px;text-transform:uppercase;cursor:pointer;margin-top:24px;
+}
+.return-btn:active{color:var(--text);border-color:var(--text);}
 
-    /* Legend */
-    .legend {
-      display: flex; flex-wrap: wrap; gap: 16px;
-      justify-content: center; padding: 22px 20px 0;
-    }
-    .leg-item { display: flex; align-items: center; gap: 7px; }
-    .leg-dot  { width: 7px; height: 7px; border-radius: 50%; }
-    .leg-txt  { font-size: 10px; letter-spacing: 1.5px; color: var(--dim); }
-
-    /* ─── WORKOUT SCREEN ─────────────────────────────────── */
-    #screen-workout {
-      padding-bottom: var(--safe-bot);
-    }
-
-    .wk-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: calc(var(--safe-top) + 18px) 20px 14px;
-    }
-    .back-btn {
-      background: none; border: 1px solid var(--line);
-      color: var(--text); width: 38px; height: 38px;
-      font-size: 22px; font-family: var(--serif); cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: background 150ms;
-    }
-    .back-btn:active { background: var(--bg-elev); }
-    .wk-date-lbl {
-      font-size: 10px; letter-spacing: 2.5px; color: var(--dim);
-      text-transform: uppercase; text-align: center; flex: 1;
-    }
-    .wk-spacer { width: 38px; }
-
-    .wk-hero {
-      text-align: center; padding: 32px 24px 24px;
-      border-bottom: 1px solid var(--line-soft);
-    }
-    .wk-eyebrow {
-      font-size: 9px; letter-spacing: 4px; color: var(--faint);
-      text-transform: uppercase;
-    }
-    .wk-title {
-      font-family: var(--serif); font-style: italic;
-      font-size: 48px; margin-top: 8px; color: var(--gold);
-      line-height: 1;
-    }
-
-    /* Volume bar */
-    .vol-card {
-      margin: 20px 20px 0;
-      padding: 16px 18px;
-      background: var(--bg-card); border: 1px solid var(--line-soft);
-    }
-    .vol-top {
-      display: flex; justify-content: space-between; align-items: baseline;
-      margin-bottom: 10px;
-    }
-    .vol-lbl { font-size: 9px; letter-spacing: 2.5px; color: var(--faint); text-transform: uppercase; }
-    .vol-num { font-family: var(--serif); font-size: 20px; color: var(--gold); }
-    .vol-track {
-      height: 3px; background: var(--line); position: relative;
-    }
-    .vol-fill {
-      height: 100%; background: var(--gold);
-      transition: width 350ms ease;
-      max-width: 100%;
-    }
-    .vol-marker {
-      position: absolute; top: -6px; bottom: -6px;
-      width: 1px; background: var(--faint);
-    }
-    .vol-marker-lbl {
-      position: absolute; top: -18px; left: 50%;
-      transform: translateX(-50%);
-      font-size: 8px; letter-spacing: 1px; color: var(--faint); text-transform: uppercase;
-    }
-    .vol-bot {
-      display: flex; justify-content: space-between; margin-top: 8px;
-    }
-    .vol-bot-lbl { font-size: 9px; color: var(--faint); }
-    .vol-bot-num { font-size: 11px; color: var(--dim); }
-
-    /* Exercise groups */
-    .ex-groups { padding: 24px 20px 0; display: flex; flex-direction: column; gap: 30px; }
-    .grp-name {
-      font-family: var(--serif); font-style: italic;
-      font-size: 17px; color: var(--dim);
-      padding-bottom: 10px; border-bottom: 1px solid var(--line-soft);
-      margin-bottom: 12px;
-    }
-    .ex-card {
-      background: var(--bg-card); border: 1px solid var(--line-soft);
-      padding: 14px 14px 12px; margin-bottom: 10px;
-    }
-    .ex-name { font-size: 12px; letter-spacing: 1px; margin-bottom: 12px; }
-
-    .set-table { width: 100%; border-collapse: collapse; }
-    .set-table thead td {
-      font-size: 8px; letter-spacing: 2.5px; color: var(--faint);
-      text-transform: uppercase; padding-bottom: 6px;
-      text-align: center;
-    }
-    .set-table thead td:first-child { text-align: left; width: 20px; }
-    .set-table thead td:last-child  { text-align: right; }
-    .set-row td { padding: 3px 2px; }
-    .set-row td:first-child {
-      font-family: var(--serif); font-style: italic;
-      font-size: 15px; color: var(--faint);
-      width: 20px; text-align: center;
-    }
-    .set-input {
-      width: 100%; background: var(--bg-elev);
-      border: 1px solid var(--line); color: var(--text);
-      font-family: var(--mono); font-size: 15px;
-      padding: 9px 6px; text-align: center; outline: none;
-      -webkit-appearance: none; border-radius: 0;
-    }
-    .set-input:focus { border-color: var(--gold); }
-    .set-input[type=number]::-webkit-outer-spin-button,
-    .set-input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-    .set-prev-cell {
-      text-align: right; font-size: 10px; color: var(--faint);
-      padding-left: 6px; white-space: nowrap;
-    }
-    .set-row.is-pr .set-input {
-      border-color: var(--gold);
-      background: var(--gold-dim);
-      color: var(--gold);
-    }
-    .set-row.is-pr td:first-child { color: var(--gold); }
-
-    /* Finish btn */
-    .finish-wrap {
-      width: 100%;
-      padding: 32px 20px calc(20px + var(--safe-bot));
-    }
-    .finish-btn {
-      width: 100%; background: var(--gold); color: var(--bg);
-      border: none; padding: 17px;
-      font-family: var(--serif); font-style: italic;
-      font-size: 17px; letter-spacing: 0.5px; cursor: pointer;
-      box-shadow: 0 8px 32px rgba(201,168,76,0.25);
-      transition: background 150ms, transform 150ms;
-    }
-    .finish-btn:active { background: #b5943f; transform: scale(0.99); }
-
-    /* Rest day */
-    .rest-screen {
-      text-align: center; padding: 80px 24px;
-    }
-    .rest-glyph { font-size: 40px; color: var(--gold); margin-bottom: 20px; }
-    .rest-title {
-      font-family: var(--serif); font-style: italic;
-      font-size: 40px;
-    }
-    .rest-body {
-      font-size: 12px; letter-spacing: 1.5px; color: var(--dim);
-      margin-top: 12px; line-height: 1.8;
-    }
-
-    /* ─── DONE SCREEN ───────────────────────────────────── */
-    #screen-done {
-      display: flex; flex-direction: column;
-      align-items: center; text-align: center;
-      padding: calc(var(--safe-top) + 60px) 24px calc(40px + var(--safe-bot));
-      min-height: 100vh;
-    }
-    .done-diamond {
-      font-size: 28px; color: var(--gold); margin-bottom: 24px;
-      animation: popIn 400ms cubic-bezier(.34,1.56,.64,1);
-    }
-    @keyframes popIn {
-      from { transform: scale(0); opacity: 0; }
-      to   { transform: scale(1); opacity: 1; }
-    }
-    .done-eyebrow {
-      font-size: 9px; letter-spacing: 4px; color: var(--faint);
-      text-transform: uppercase;
-    }
-    .done-title {
-      font-family: var(--serif); font-style: italic;
-      font-size: 54px; color: var(--gold);
-      margin: 8px 0 36px; line-height: 1;
-    }
-    .done-vol-block {
-      width: 100%; padding: 24px 0;
-      border-top: 1px solid var(--line-soft);
-      border-bottom: 1px solid var(--line-soft);
-      margin-bottom: 20px;
-    }
-    .done-vol-num {
-      font-family: var(--serif); font-size: 52px; color: var(--gold);
-    }
-    .done-vol-lbl {
-      font-size: 9px; letter-spacing: 3.5px; color: var(--faint);
-      text-transform: uppercase; margin-top: 6px;
-    }
-    .done-delta {
-      margin-top: 14px; font-size: 12px; letter-spacing: 1px;
-    }
-    .done-delta.pos { color: var(--gold); }
-    .done-delta.neg { color: #c87b6e; }
-
-    .prs-card {
-      width: 100%; background: var(--bg-card);
-      border: 1px solid var(--line-soft);
-      padding: 18px; margin-top: 12px; text-align: left;
-    }
-    .prs-hdr {
-      font-size: 9px; letter-spacing: 3px; color: var(--gold);
-      text-transform: uppercase; margin-bottom: 14px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .pr-item {
-      display: flex; justify-content: space-between; align-items: baseline;
-      padding: 9px 0; border-bottom: 1px solid var(--line-soft);
-    }
-    .pr-item:last-child { border-bottom: none; }
-    .pr-name { font-size: 12px; }
-    .pr-val  { font-family: var(--serif); font-size: 19px; color: var(--gold); }
-    .pr-prev { font-size: 10px; color: var(--faint); font-family: var(--mono); }
-
-    .done-back-btn {
-      margin-top: 40px; width: 100%;
-      background: none; border: 1px solid var(--gold); color: var(--gold);
-      padding: 17px; font-family: var(--serif); font-style: italic;
-      font-size: 16px; letter-spacing: 0.5px; cursor: pointer;
-      transition: background 150ms;
-    }
-    .done-back-btn:active { background: var(--gold-dim); }
-
-    /* ─── TOAST ──────────────────────────────────────────── */
-    #toast {
-      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(10px);
-      padding: 12px 22px; font-size: 11px; letter-spacing: 1.5px;
-      font-family: var(--mono); background: var(--bg-elev);
-      border: 1px solid var(--line); color: var(--text);
-      opacity: 0; transition: opacity 200ms, transform 200ms;
-      pointer-events: none; white-space: nowrap; z-index: 999;
-    }
-    #toast.show {
-      opacity: 1; transform: translateX(-50%) translateY(0);
-    }
-    #toast.ok   { border-color: var(--gold);  color: var(--gold); }
-    #toast.err  { border-color: #c87b6e; color: #c87b6e; }
-    #toast.warn { border-color: #c9a84c; color: #d4b06e; }
-  </style>
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:calc(20px + var(--safe-bottom));left:20px;right:20px;
+  padding:12px 16px;font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  opacity:0;transition:opacity 0.2s;pointer-events:none;z-index:999;
+  border-left:3px solid;background:var(--surface);
+}
+#toast.show{opacity:1;}
+</style>
 </head>
 <body>
-<div id="app">
 
-  <!-- LOADING -->
-  <div id="screen-loading" class="screen active">
-    <div class="load-monogram">L · W</div>
-    <div class="load-bar"></div>
-    <div class="load-label">Loading your journal</div>
-  </div>
-
-  <!-- CALENDAR -->
-  <div id="screen-cal" class="screen">
-    <div class="cal-header">
-      <div class="cal-monogram">L · W</div>
-      <div class="cal-title">Atelier</div>
-      <div class="cal-sub">Strength Journal</div>
-    </div>
-
-    <div id="today-banner" class="today-banner" data-type="push">
-      <div class="tb-eyebrow">Today</div>
-      <div class="tb-name" id="today-name">Push</div>
-      <div class="tb-cta" id="today-cta">Begin session →</div>
-    </div>
-
-    <div class="stats-row">
-      <div class="stat">
-        <div class="stat-n" id="stat-streak">0</div>
-        <div class="stat-l">Streak</div>
-      </div>
-      <div class="stat">
-        <div class="stat-n" id="stat-sessions">0</div>
-        <div class="stat-l">Sessions</div>
-      </div>
-      <div class="stat">
-        <div class="stat-n" id="stat-volume">0</div>
-        <div class="stat-l">kg lifted</div>
-      </div>
-    </div>
-
-    <div class="month-nav">
-      <button class="mnav-btn" id="prev-month">‹</button>
-      <div class="month-name" id="month-name">May 2026</div>
-      <button class="mnav-btn" id="next-month">›</button>
-    </div>
-
-    <div class="dow-row">
-      <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div>
-      <div class="dow">W</div><div class="dow">T</div><div class="dow">F</div>
-      <div class="dow">S</div>
-    </div>
-
-    <div class="cal-grid" id="cal-grid"></div>
-
-    <div class="legend">
-      <div class="leg-item"><div class="leg-dot" style="background:var(--gold)"></div><span class="leg-txt">Push</span></div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--teal)"></div><span class="leg-txt">Pull</span></div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--purple)"></div><span class="leg-txt">Tri & Abs</span></div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--faint)"></div><span class="leg-txt">Rest</span></div>
-    </div>
-  </div>
-
-  <!-- WORKOUT -->
-  <div id="screen-workout" class="screen">
-    <div class="wk-header">
-      <button class="back-btn" id="back-btn">‹</button>
-      <div class="wk-date-lbl" id="wk-date-lbl"></div>
-      <div class="wk-spacer"></div>
-    </div>
-    <div class="wk-hero">
-      <div class="wk-eyebrow">Session</div>
-      <div class="wk-title" id="wk-title">Push</div>
-    </div>
-    <div id="vol-card" class="vol-card" style="display:none">
-      <div class="vol-top">
-        <span class="vol-lbl">Today</span>
-        <span class="vol-num" id="vol-num">0 kg</span>
-      </div>
-      <div class="vol-track">
-        <div class="vol-fill" id="vol-fill" style="width:0%"></div>
-        <div class="vol-marker" id="vol-marker" style="left:66%">
-          <div class="vol-marker-lbl">last</div>
-        </div>
-      </div>
-      <div class="vol-bot">
-        <span class="vol-bot-lbl" id="vol-bot-lbl">Last Push</span>
-        <span class="vol-bot-num" id="vol-bot-num">0 kg</span>
-      </div>
-    </div>
-    <div class="ex-groups" id="ex-groups"></div>
-    <div class="finish-wrap">
-      <button class="finish-btn" id="finish-btn">Finish session</button>
-    </div>
-  </div>
-
-  <!-- DONE -->
-  <div id="screen-done" class="screen">
-    <div class="done-diamond">◆</div>
-    <div class="done-eyebrow">Session complete</div>
-    <div class="done-title" id="done-title">Push</div>
-    <div class="done-vol-block">
-      <div class="done-vol-num" id="done-vol-num">0</div>
-      <div class="done-vol-lbl">kg total volume</div>
-      <div class="done-delta" id="done-delta"></div>
-    </div>
-    <div id="done-prs"></div>
-    <button class="done-back-btn" id="done-back-btn">Return to calendar</button>
-  </div>
-
+<!-- LOADING -->
+<div id="screen-loading" class="screen active">
+  <div class="ld-eye">Strength Journal</div>
+  <div class="ld-title">Atelier</div>
+  <div class="ld-bar"></div>
+  <div id="ld-status">Preparing</div>
 </div>
+
+<!-- CALENDAR -->
+<div id="screen-calendar" class="screen">
+  <div class="cal-header">
+    <div class="monogram">L · W</div>
+    <div class="app-title">Atelier</div>
+    <div class="app-sub">Strength Journal</div>
+  </div>
+  <div id="today-card" class="today-card"></div>
+  <div class="stats-row">
+    <div class="stat-cell"><div class="stat-val" id="stat-streak">0</div><div class="stat-lbl">Streak</div></div>
+    <div class="stat-cell"><div class="stat-val" id="stat-sessions">0</div><div class="stat-lbl">Sessions</div></div>
+    <div class="stat-cell"><div class="stat-val" id="stat-volume">0</div><div class="stat-lbl">kg Lifted</div></div>
+  </div>
+  <div class="month-nav">
+    <button class="mnav-btn" id="btn-prev">‹</button>
+    <div class="month-lbl" id="month-lbl">—</div>
+    <button class="mnav-btn" id="btn-next">›</button>
+  </div>
+  <div class="cal-wrap">
+    <div class="dow-row">
+      <div class="dow">Su</div><div class="dow">Mo</div><div class="dow">Tu</div>
+      <div class="dow">We</div><div class="dow">Th</div><div class="dow">Fr</div><div class="dow">Sa</div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:#c9a84c"></div>Push</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#7fb3a8"></div>Pull</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#9d8bb5"></div>Tri &amp; Abs</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#4e4e4e"></div>Rest</div>
+  </div>
+</div>
+
+<!-- WORKOUT -->
+<div id="screen-workout" class="screen">
+  <div class="wo-header">
+    <button class="back-btn" id="btn-back">←</button>
+    <div class="wo-header-text">
+      <div class="wo-date-lbl" id="wo-date-lbl"></div>
+      <div class="wo-session-eye">Session</div>
+      <div class="wo-type" id="wo-type"></div>
+    </div>
+  </div>
+  <div id="vol-card-wrap"></div>
+  <div class="ex-groups" id="ex-groups"></div>
+  <div class="finish-wrap">
+    <button class="finish-btn" id="btn-finish">Complete Session</button>
+  </div>
+</div>
+
+<!-- DONE -->
+<div id="screen-done" class="screen">
+  <div class="done-hdr">
+    <div class="done-diamond">◆</div>
+    <div class="done-eye">Session Complete</div>
+    <div class="done-type" id="done-type"></div>
+  </div>
+  <div>
+    <div class="done-vol" id="done-vol"></div>
+    <div class="done-vol-lbl">Total Volume</div>
+    <div class="done-delta" id="done-delta"></div>
+  </div>
+  <div id="done-pr-card"></div>
+  <button class="return-btn" id="btn-return">Return to Calendar</button>
+</div>
+
 <div id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-// SUPABASE
-// ═══════════════════════════════════════════════════════════════
+// ── CONFIG ────────────────────────────────────────────────────────────────────
 const SB_URL = 'https://yfxnjkackrhwkiqkajuy.supabase.co';
 const SB_KEY = 'sb_publishable_3FazdVW4VOkt9NSwowu0_w_fOLE-CCK';
 const SB_HDR = {
   'apikey': SB_KEY,
-  'Authorization': `Bearer ${SB_KEY}`,
-  'Content-Type': 'application/json'
+  'Authorization': 'Bearer ' + SB_KEY,
+  'Content-Type': 'application/json',
+  'Prefer': 'resolution=merge-duplicates,return=minimal'
 };
 
-async function dbGetAll() {
-  const r = await fetch(`${SB_URL}/rest/v1/workouts?select=*&order=iso.asc`, { headers: SB_HDR });
-  if (!r.ok) throw new Error(`GET failed: ${r.status}`);
-  return r.json();
-}
+const TYPE_COLOR = { push:'#c9a84c', pull:'#7fb3a8', tri:'#9d8bb5', rest:'#4e4e4e' };
+const TYPE_LABEL = { push:'Push', pull:'Pull', tri:'Tri & Abs', rest:'Rest' };
 
-async function dbUpsert(row) {
-  const r = await fetch(`${SB_URL}/rest/v1/workouts`, {
-    method: 'POST',
-    headers: { ...SB_HDR, 'Prefer': 'resolution=merge-duplicates,return=representation' },
-    body: JSON.stringify(row)
-  });
-  if (!r.ok) {
-    const txt = await r.text();
-    throw new Error(`UPSERT failed: ${r.status} ${txt}`);
-  }
-  return r.json();
-}
-
-// ═══════════════════════════════════════════════════════════════
-// WORKOUT DEFINITIONS
-// ═══════════════════════════════════════════════════════════════
-const WORKOUTS = {
-  push: {
-    name: 'Push', color: 'var(--gold)',
-    groups: [
-      { name: 'Chest', exercises: [
-        { key: 'incline_machine',    name: 'Incline Machine' },
-        { key: 'pec_fly',            name: 'Pec Fly' },
-        { key: 'lower_chest_cable',  name: 'Lower Chest Cable' }
-      ]},
-      { name: 'Shoulder', exercises: [
-        { key: 'lateral_raise', name: 'Lateral Raise' },
-        { key: 'back_delt',     name: 'Back Delt' }
-      ]}
-    ]
-  },
-  pull: {
-    name: 'Pull', color: 'var(--teal)',
-    groups: [
-      { name: 'Back', exercises: [
-        { key: 'lat_pulldown',       name: 'Lat Pulldown' },
-        { key: 'narrow_grip_seated', name: 'Narrow Grip Seated' },
-        { key: 'tbar_row',           name: 'T-Bar Row' }
-      ]},
-      { name: 'Bicep', exercises: [
-        { key: 'peach_curl',         name: 'Peach Curl' },
-        { key: 'cross_body_hammer',  name: 'Cross Body Hammer Curl' }
-      ]}
-    ]
-  },
-  tri: {
-    name: 'Tri & Abs', color: 'var(--purple)',
-    groups: [
-      { name: 'Tricep', exercises: [
-        { key: 'cable_rope_pushdown',    name: 'Cable Rope Pushdown' },
-        { key: 'isolate_cable_pulldown', name: 'Isolate Cable Pulldown' }
-      ]},
-      { name: 'Abs', exercises: [
-        { key: 'tilted_seat_situp',  name: 'Tilted Seat Sit Up' },
-        { key: 'hanging_leg_raise',  name: 'Hanging Leg Raise' }
-      ]}
-    ]
-  },
-  rest: { name: 'Rest', color: 'var(--faint)', groups: [] }
+const EXERCISES = {
+  push:[
+    {group:'Chest', items:['Incline Machine','Pec Fly','Lower Chest Cable']},
+    {group:'Shoulder', items:['Lateral Raise','Back Delt']}
+  ],
+  pull:[
+    {group:'Back', items:['Lat Pulldown','Narrow Grip Seated','T-Bar Row']},
+    {group:'Bicep', items:['Peach Curl','Cross Body Hammer Curl']}
+  ],
+  tri:[
+    {group:'Tricep', items:['Cable Rope Pushdown','Isolate Cable Pulldown']},
+    {group:'Abs', items:['Tilted Seat Sit Up','Hanging Leg Raise']}
+  ]
 };
 
-// ═══════════════════════════════════════════════════════════════
-// SCHEDULE
-// ═══════════════════════════════════════════════════════════════
-const PRESET = { '2026-05-01': 'push', '2026-05-02': 'pull', '2026-05-03': 'tri' };
-const CYCLE  = ['push', 'pull', 'tri', 'rest'];
-const CYCLE_START = new Date(2026, 4, 4); // May 4 2026
+const PRESETS    = {'2026-05-01':'push','2026-05-02':'pull','2026-05-03':'tri'};
+const CYCLE      = ['push','pull','tri','rest'];
+const CYCLE_START = '2026-05-04';
 
-function toISO(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${dd}`;
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let cache        = {};
+let currentDate  = '';
+let currentType  = '';
+let currentAccent= '';
+let calYear      = 0;
+let calMonth     = 0;
+let escaped      = false;
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function isoToday() {
+  const d = new Date();
+  return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
+}
+function p2(n){return String(n).padStart(2,'0');}
+
+function getType(iso) {
+  if (PRESETS[iso]) return PRESETS[iso];
+  const diff = Math.floor((new Date(iso+'T12:00:00') - new Date(CYCLE_START+'T12:00:00')) / 86400000);
+  if (diff < 0) return 'rest';
+  return CYCLE[((diff % 4) + 4) % 4];
 }
 
-function workoutTypeFor(date) {
-  const iso = toISO(date);
-  if (PRESET[iso]) return PRESET[iso];
-  const d = new Date(date); d.setHours(0,0,0,0);
-  const s = new Date(CYCLE_START); s.setHours(0,0,0,0);
-  if (d < s) return null;
-  const days = Math.floor((d - s) / 86400000);
-  return CYCLE[days % 4];
+function exKey(name){return name.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');}
+
+function fmtISO(iso) {
+  const d = new Date(iso+'T12:00:00');
+  const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return M[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear();
 }
 
-// ═══════════════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════════════
-let db = {};           // { iso: row }
-let calCursor = null;  // first-of-month Date
-let activeDate = null; // Date being logged
-let activeSets = {};   // { key: [{w,r},{w,r},{w,r}] }
-let lastSameRow = null;// previous same-type completed row
+function fmtVol(kg){return kg>=1000?(kg/1000).toFixed(1)+'k':String(kg);}
 
-// ═══════════════════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════════════════
-function calcVolume(sets) {
-  if (!sets) return 0;
-  let v = 0;
-  Object.values(sets).forEach(arr => arr.forEach(s => {
-    v += (parseFloat(s.w) || 0) * (parseInt(s.r) || 0);
-  }));
-  return v;
-}
-
-function emptySets(type) {
-  const out = {};
-  (WORKOUTS[type]?.groups || []).forEach(g => {
-    g.exercises.forEach(ex => {
-      out[ex.key] = [{w:'',r:''},{w:'',r:''},{w:'',r:''}];
-    });
+function calcVol(sets) {
+  if (!sets||typeof sets!=='object') return 0;
+  let v=0;
+  Object.values(sets).forEach(arr=>{
+    if(!Array.isArray(arr))return;
+    arr.forEach(s=>{v+=(parseFloat(s.w)||0)*(parseFloat(s.r)||0);});
   });
-  return out;
+  return Math.round(v);
 }
 
-function findExName(type, key) {
-  for (const g of (WORKOUTS[type]?.groups || [])) {
-    for (const ex of g.exercises) {
-      if (ex.key === key) return ex.name;
-    }
-  }
-  return key;
+async function fetchTO(url, opts, ms) {
+  const ctrl = new AbortController();
+  const id = setTimeout(()=>ctrl.abort(), ms);
+  try {
+    const r = await fetch(url,{...opts, signal:ctrl.signal});
+    clearTimeout(id); return r;
+  } catch(e){clearTimeout(id); throw e;}
 }
 
-function calcStreak() {
-  const today = new Date(); today.setHours(0,0,0,0);
-  let streak = 0;
-  const cursor = new Date(today);
-  for (let i = 0; i < 365; i++) {
-    const iso = toISO(cursor);
-    const type = workoutTypeFor(cursor);
-    if (type === 'rest') { cursor.setDate(cursor.getDate() - 1); continue; }
-    if (db[iso]?.done) { streak++; cursor.setDate(cursor.getDate() - 1); }
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function setStatus(t){const e=document.getElementById('ld-status');if(e)e.textContent=t;}
+
+let toastTmr=null;
+function toast(msg,color){
+  color=color||'#c9a84c';
+  const e=document.getElementById('toast');
+  e.textContent=msg; e.style.color=color; e.style.borderLeftColor=color;
+  e.classList.add('show');
+  if(toastTmr)clearTimeout(toastTmr);
+  toastTmr=setTimeout(()=>e.classList.remove('show'),3000);
+}
+
+// ── CACHE ─────────────────────────────────────────────────────────────────────
+function loadCache(){
+  try{const r=localStorage.getItem('atelier_cache');if(r)cache=JSON.parse(r);}catch(e){cache={};}
+}
+function saveCache(){
+  try{localStorage.setItem('atelier_cache',JSON.stringify(cache));}catch(e){}
+}
+
+// ── DATABASE ──────────────────────────────────────────────────────────────────
+async function dbGetAll(){
+  const r = await fetchTO(SB_URL+'/rest/v1/workouts?select=*&order=iso.desc',{headers:SB_HDR},5000);
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const rows = await r.json();
+  rows.forEach(row=>{cache[row.iso]={type:row.type,sets:row.sets||{},done:row.done,ts:row.ts};});
+  saveCache();
+}
+
+async function dbUpsert(row){
+  const r = await fetchTO(SB_URL+'/rest/v1/workouts',{method:'POST',headers:SB_HDR,body:JSON.stringify(row)},8000);
+  if(!r.ok) throw new Error('HTTP '+r.status);
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function calcStats(){
+  const done = Object.entries(cache).filter(([,v])=>v.done);
+  const sessions = done.length;
+  let totalVol=0;
+  done.forEach(([,v])=>{totalVol+=calcVol(v.sets);});
+
+  // streak: walk backwards from today, skip rest days, stop on missed workout
+  let streak=0, check=isoToday(), guard=90;
+  while(guard-->0){
+    const t=getType(check);
+    if(t==='rest'){check=prevDay(check);continue;}
+    const e=cache[check];
+    if(e&&e.done){streak++;check=prevDay(check);}
     else break;
   }
-  return streak;
+  return {sessions,totalVol,streak};
 }
 
-function showToast(msg, kind = 'ok') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = `show ${kind}`;
-  clearTimeout(el._t);
-  el._t = setTimeout(() => { el.className = ''; }, 2400);
+function prevDay(iso){
+  const d=new Date(iso+'T12:00:00');
+  d.setDate(d.getDate()-1);
+  return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
 }
 
-// ═══════════════════════════════════════════════════════════════
-// SCREEN TRANSITIONS
-// ═══════════════════════════════════════════════════════════════
-const screens = ['loading', 'cal', 'workout', 'done'];
-function goTo(name) {
-  screens.forEach(id => {
-    const el = document.getElementById(`screen-${id}`);
-    if (!el) return;
-    if (id === name) {
-      el.classList.add('active');
-    } else {
-      el.classList.remove('active');
-    }
-  });
-  // Scroll page to top (not the screen container)
-  window.scrollTo(0, 0);
-}
+// ── CALENDAR ──────────────────────────────────────────────────────────────────
+function renderCalendar(){
+  const today=isoToday();
+  const type=getType(today);
+  const accent=TYPE_COLOR[type];
 
-// ═══════════════════════════════════════════════════════════════
-// CALENDAR RENDER
-// ═══════════════════════════════════════════════════════════════
-function renderCalendar() {
-  const today = new Date(); today.setHours(0,0,0,0);
-
-  // Update today banner
-  const todayType = workoutTypeFor(today);
-  const banner = document.getElementById('today-banner');
-  const todayRow = db[toISO(today)];
-  banner.dataset.type = todayType || 'rest';
-  document.getElementById('today-name').textContent = WORKOUTS[todayType]?.name || 'Rest';
-  document.getElementById('today-cta').textContent =
-    todayRow?.done ? 'View session →' :
-    todayType === 'rest' ? 'Recovery day' : 'Begin session →';
-  if (todayType && todayType !== 'rest') {
-    banner.onclick = () => openWorkout(today);
+  // Today card
+  const card=document.getElementById('today-card');
+  card.style.borderLeftColor=accent;
+  card.onclick=null;
+  if(type==='rest'){
+    card.innerHTML=`<div class="today-eye">Today</div>
+      <div class="today-type" style="color:var(--dim)">Rest Day</div>
+      <div class="today-date">${fmtISO(today)}</div>`;
+    card.style.cursor='default';
   } else {
-    banner.onclick = null;
+    card.innerHTML=`<div class="today-eye">Today</div>
+      <div class="today-type" style="color:${accent}">${TYPE_LABEL[type]}</div>
+      <div class="today-date">${fmtISO(today)}</div>
+      <div class="today-tap" style="color:${accent}">Tap to start →</div>`;
+    card.style.cursor='pointer';
+    card.onclick=()=>openWorkout(today);
   }
 
   // Stats
-  const completed = Object.values(db).filter(r => r.done);
-  const totalVol = completed.reduce((a, r) => a + calcVolume(r.sets), 0);
-  document.getElementById('stat-streak').textContent = calcStreak();
-  document.getElementById('stat-sessions').textContent = completed.length;
-  document.getElementById('stat-volume').textContent =
-    totalVol >= 1000 ? `${(totalVol/1000).toFixed(1)}k` : Math.round(totalVol);
+  const {sessions,totalVol,streak}=calcStats();
+  document.getElementById('stat-streak').textContent=streak;
+  document.getElementById('stat-sessions').textContent=sessions;
+  document.getElementById('stat-volume').textContent=fmtVol(totalVol);
 
-  // Month grid
-  const y = calCursor.getFullYear();
-  const m = calCursor.getMonth();
-  document.getElementById('month-name').textContent =
-    calCursor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  renderGrid(calYear,calMonth);
+}
 
-  const firstDow = new Date(y, m, 1).getDay();
-  const daysInMonth = new Date(y, m + 1, 0).getDate();
+function renderGrid(yr,mo){
+  const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('month-lbl').textContent=MONTHS[mo]+' '+yr;
 
-  const grid = document.getElementById('cal-grid');
-  grid.innerHTML = '';
+  const grid=document.getElementById('cal-grid');
+  grid.innerHTML='';
+  const today=isoToday();
+  const firstDay=new Date(yr,mo,1).getDay();
+  const daysInMo=new Date(yr,mo+1,0).getDate();
 
-  for (let i = 0; i < firstDow; i++) {
-    const blank = document.createElement('div');
-    blank.className = 'cal-cell blank';
-    grid.appendChild(blank);
+  for(let i=0;i<firstDay;i++){
+    const e=document.createElement('div');
+    e.className='cal-cell'; grid.appendChild(e);
   }
 
-  for (let d = 1; d <= daysInMonth; d++) {
-    const date = new Date(y, m, d);
-    const iso  = toISO(date);
-    const type = workoutTypeFor(date);
-    const row  = db[iso];
-    const isToday = date.getTime() === today.getTime();
-    const isRest  = type === 'rest';
-    const isDone  = !!row?.done;
+  for(let d=1;d<=daysInMo;d++){
+    const iso=yr+'-'+p2(mo+1)+'-'+p2(d);
+    const type=getType(iso);
+    const entry=cache[iso];
+    const isDone=entry&&entry.done;
+    const isRest=type==='rest';
+    const color=TYPE_COLOR[type];
 
-    const cell = document.createElement('div');
-    cell.className = 'cal-cell' +
-      (isToday ? ' is-today' : '') +
-      (isDone  ? ' is-done'  : '') +
-      (isRest  ? ' rest'     : '');
-    if (isDone && type) cell.dataset.type = type;
+    const cell=document.createElement('div');
+    cell.className='cal-cell'+(iso===today?' is-today':'')+(isDone?' is-done':'');
+    if(isDone) cell.style.borderColor=color;
+    if(!isRest) cell.classList.add('tappable');
 
-    const num = document.createElement('div');
-    num.className = 'cell-num' + (isDone ? ' done-num' : '');
-    if (isDone && type) num.dataset.type = type;
-    num.textContent = d;
+    const num=document.createElement('div');
+    num.className='cal-num';
+    num.textContent=d;
+    if(isDone) num.style.color=color;
+    else if(isRest) num.style.color='var(--faint)';
+
+    const dot=document.createElement('div');
+    dot.className='cal-dot';
+    dot.style.background=isRest?'transparent':color;
+
     cell.appendChild(num);
+    cell.appendChild(dot);
 
-    if (type && type !== 'rest') {
-      const dot = document.createElement('div');
-      dot.className = 'cell-dot';
-      dot.dataset.type = type;
-      cell.appendChild(dot);
+    if(!isRest){
+      cell.addEventListener('click',()=>openWorkout(iso));
     }
-
-    if (!isRest && type) {
-      const capturedDate = new Date(date);
-      cell.addEventListener('click', () => openWorkout(capturedDate));
-    }
-
     grid.appendChild(cell);
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// WORKOUT SCREEN
-// ═══════════════════════════════════════════════════════════════
-function openWorkout(date) {
-  activeDate = date;
-  const iso  = toISO(date);
-  const type = workoutTypeFor(date);
-  const wk   = WORKOUTS[type];
-  const existing = db[iso];
+// ── WORKOUT ───────────────────────────────────────────────────────────────────
+function openWorkout(iso){
+  currentDate=iso;
+  currentType=getType(iso);
+  currentAccent=TYPE_COLOR[currentType];
+  document.documentElement.style.setProperty('--accent',currentAccent);
 
-  // Title
-  document.getElementById('wk-date-lbl').textContent =
-    date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
-  const titleEl = document.getElementById('wk-title');
-  titleEl.textContent = wk.name;
-  titleEl.style.color = wk.color;
+  document.getElementById('wo-date-lbl').textContent=fmtISO(iso);
+  const typeEl=document.getElementById('wo-type');
+  typeEl.textContent=TYPE_LABEL[currentType];
+  typeEl.style.color=currentAccent;
 
-  // Rest day
-  if (!wk.groups || wk.groups.length === 0) {
-    document.getElementById('ex-groups').innerHTML = `
-      <div class="rest-screen">
-        <div class="rest-glyph">◇</div>
-        <div class="rest-title">Rest</div>
-        <div class="rest-body">Recover.<br>Eat well. Sleep deeply.</div>
-      </div>`;
-    document.querySelector('.finish-wrap').style.display = 'none';
-    document.getElementById('vol-card').style.display = 'none';
-    goTo('workout');
-    return;
-  }
-  document.querySelector('.finish-wrap').style.display = '';
-
-  // Seed sets
-  activeSets = existing?.sets
-    ? JSON.parse(JSON.stringify(existing.sets))
-    : emptySets(type);
-
-  // Find last same-type completed row
-  lastSameRow = Object.values(db)
-    .filter(r => r.type === type && r.done && r.iso < iso)
-    .sort((a, b) => a.iso < b.iso ? 1 : -1)[0] || null;
-
-  // Volume bar
-  const volCard = document.getElementById('vol-card');
-  if (lastSameRow) {
-    volCard.style.display = '';
-    document.getElementById('vol-bot-lbl').textContent = `Last ${wk.name}`;
-    updateVolBar();
-  } else {
-    volCard.style.display = 'none';
-  }
-
-  // Build exercise cards
-  buildExerciseCards(type);
-  goTo('workout');
+  buildVolCard();
+  buildExercises();
+  showScreen('screen-workout');
 }
 
-function updateVolBar() {
-  const v = calcVolume(activeSets);
-  const lv = lastSameRow ? calcVolume(lastSameRow.sets) : 0;
-  document.getElementById('vol-num').textContent = `${Math.round(v).toLocaleString()} kg`;
-  document.getElementById('vol-bot-num').textContent = `${Math.round(lv).toLocaleString()} kg`;
-  const pct = lv ? Math.min(130, (v / lv) * 100) : 0;
-  document.getElementById('vol-fill').style.width = pct + '%';
+function getPrevSession(type){
+  const entries=Object.entries(cache)
+    .filter(([iso,v])=>v.type===type&&v.done&&iso!==currentDate)
+    .sort(([a],[b])=>a<b?1:-1);
+  return entries.length?entries[0][1]:null;
 }
 
-function buildExerciseCards(type) {
-  const wk = WORKOUTS[type];
-  const container = document.getElementById('ex-groups');
-  container.innerHTML = '';
+function buildVolCard(){
+  const wrap=document.getElementById('vol-card-wrap');
+  const prev=getPrevSession(currentType);
+  if(!prev){wrap.innerHTML='';return;}
 
-  // best previous weight per key
-  const bestPrev = {};
-  if (lastSameRow?.sets) {
-    Object.entries(lastSameRow.sets).forEach(([k, arr]) => {
-      bestPrev[k] = Math.max(0, ...arr.map(s => parseFloat(s.w) || 0));
-    });
-  }
+  const prevVol=calcVol(prev.sets);
+  const currVol=calcVol((cache[currentDate]||{}).sets||{});
+  const maxVol=Math.max(prevVol,currVol,1);
+  const fillPct=Math.min(currVol/maxVol*100,100);
+  const markPct=Math.min(prevVol/maxVol*100,100);
 
-  wk.groups.forEach(grp => {
-    const grpEl = document.createElement('div');
-    grpEl.className = 'grp';
-    grpEl.innerHTML = `<div class="grp-name">${grp.name}</div>`;
+  wrap.innerHTML=`<div class="vol-card" style="border-left-color:${currentAccent}">
+    <div class="vol-eye">Today's Volume</div>
+    <div class="vol-today-num" style="color:${currentAccent}" id="vol-num">${currVol} <span style="font-size:16px;color:var(--dim)">kg</span></div>
+    <div class="vol-bar-wrap">
+      <div class="vol-bar-fill" id="vol-fill" style="width:${fillPct}%;background:${currentAccent}"></div>
+      <div class="vol-bar-marker" style="left:${markPct}%"></div>
+    </div>
+    <div class="vol-sub">Last ${TYPE_LABEL[currentType]}: ${prevVol} kg</div>
+  </div>`;
+}
 
-    grp.exercises.forEach(ex => {
-      const lastArr = lastSameRow?.sets?.[ex.key] || [];
-      const card = document.createElement('div');
-      card.className = 'ex-card';
+function refreshVolCard(){
+  const numEl=document.getElementById('vol-num');
+  const fillEl=document.getElementById('vol-fill');
+  if(!numEl||!fillEl)return;
+  const prev=getPrevSession(currentType);
+  const prevVol=prev?calcVol(prev.sets):0;
+  const currVol=calcVol(collectSets());
+  const maxVol=Math.max(prevVol,currVol,1);
+  numEl.innerHTML=currVol+' <span style="font-size:16px;color:var(--dim)">kg</span>';
+  fillEl.style.width=Math.min(currVol/maxVol*100,100)+'%';
+}
 
-      let rows = '';
-      for (let i = 0; i < 3; i++) {
-        const s = activeSets[ex.key]?.[i] || {w:'', r:''};
-        const ls = lastArr[i];
-        const prevStr = ls?.w ? `${ls.w}×${ls.r || '—'}` : '—';
-        rows += `
-          <tr class="set-row" data-key="${ex.key}" data-idx="${i}">
-            <td>${i + 1}</td>
-            <td><input class="set-input" type="number" inputmode="decimal" placeholder="—" value="${s.w}" data-field="w" /></td>
-            <td><input class="set-input" type="number" inputmode="numeric" placeholder="—" value="${s.r}" data-field="r" /></td>
-            <td class="set-prev-cell">${prevStr}</td>
-          </tr>`;
+function buildExercises(){
+  const container=document.getElementById('ex-groups');
+  container.innerHTML='';
+  const defs=EXERCISES[currentType]||[];
+  const entry=cache[currentDate]||{};
+  const prev=getPrevSession(currentType);
+
+  defs.forEach(group=>{
+    const hdr=document.createElement('div');
+    hdr.className='group-hdr';
+    hdr.textContent=group.group;
+    container.appendChild(hdr);
+
+    group.items.forEach(name=>{
+      const key=exKey(name);
+      const savedSets=(entry.sets&&entry.sets[key])||[];
+      const prevSets=(prev&&prev.sets&&prev.sets[key])||[];
+
+      const card=document.createElement('div');
+      card.className='ex-card';
+
+      const nm=document.createElement('div');
+      nm.className='ex-name';
+      nm.textContent=name;
+      card.appendChild(nm);
+
+      const tbl=document.createElement('table');
+      tbl.className='sets-tbl';
+      tbl.innerHTML=`<thead><tr>
+        <th style="width:22px">#</th>
+        <th style="width:70px">kg</th>
+        <th style="width:24px"></th>
+        <th style="width:70px">reps</th>
+        <th style="text-align:right">last</th>
+      </tr></thead>`;
+
+      const tbody=document.createElement('tbody');
+      const kgInputs=[];
+
+      for(let i=0;i<3;i++){
+        const sv=savedSets[i]||{};
+        const pv=prevSets[i]||{};
+        const last=pv.w?(pv.w+'×'+pv.r):'—';
+
+        const tr=document.createElement('tr');
+        const kgInp=makeInput('decimal',key,i,'w',sv.w||'');
+        const rpInp=makeInput('numeric',key,i,'r',sv.r||'');
+
+        tr.appendChild(td('set-num',''+(i+1)));
+        tr.appendChild(tdNode(kgInp));
+        tr.appendChild(td('set-x','×'));
+        tr.appendChild(tdNode(rpInp));
+        tr.appendChild(td('set-last',last));
+        tbody.appendChild(tr);
+        kgInputs.push(kgInp);
       }
 
-      card.innerHTML = `
-        <div class="ex-name">${ex.name}</div>
-        <table class="set-table">
-          <thead>
-            <tr>
-              <td></td>
-              <td>kg</td>
-              <td>reps</td>
-              <td style="text-align:right">last</td>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>`;
+      tbl.appendChild(tbody);
+      card.appendChild(tbl);
+      card.appendChild(divider());
+      container.appendChild(card);
 
-      // Input listeners
-      let autofillTimers = {}; // per-exercise debounce timers
-      card.querySelectorAll('.set-input').forEach(input => {
-        input.addEventListener('input', e => {
-          const row = e.target.closest('.set-row');
-          const key = row.dataset.key;
-          const idx = parseInt(row.dataset.idx);
-          const field = e.target.dataset.field;
-          activeSets[key][idx][field] = e.target.value;
-
-          // PR highlight for current row
-          const w = parseFloat(activeSets[key][idx].w) || 0;
-          const prev = bestPrev[key] || 0;
-          row.classList.toggle('is-pr', w > 0 && prev > 0 && w > prev);
-
-          updateVolBar();
-
-          // Auto-fill: 700ms after user stops typing in set 1 kg, copy to empty sets
-          if (field === 'w' && idx === 0) {
-            clearTimeout(autofillTimers[key]);
-            autofillTimers[key] = setTimeout(() => {
-              const val = activeSets[key][0].w;
-              if (val === '' || val == null) return;
-              const tbody = row.closest('tbody');
-              tbody.querySelectorAll('.set-row').forEach((r, i) => {
-                if (i === 0) return;
-                const wInput = r.querySelector('[data-field="w"]');
-                if (wInput && wInput.value === '') {
-                  wInput.value = val;
-                  activeSets[key][i].w = val;
-                  const wv = parseFloat(val) || 0;
-                  const pv = bestPrev[key] || 0;
-                  r.classList.toggle('is-pr', wv > 0 && pv > 0 && wv > pv);
-                }
-              });
-              updateVolBar();
-            }, 700);
-          }
-        });
+      // auto-fill set 1 kg → sets 2 & 3 (debounced)
+      let afTimer=null;
+      kgInputs[0].addEventListener('input',()=>{
+        checkPR(kgInputs[0],key);
+        refreshVolCard();
+        clearTimeout(afTimer);
+        afTimer=setTimeout(()=>{
+          const v=kgInputs[0].value.trim();
+          if(!v)return;
+          if(!kgInputs[1].value){kgInputs[1].value=v;checkPR(kgInputs[1],key);}
+          if(!kgInputs[2].value){kgInputs[2].value=v;checkPR(kgInputs[2],key);}
+          refreshVolCard();
+        },700);
       });
-
-      grpEl.appendChild(card);
+      kgInputs[1].addEventListener('input',()=>{checkPR(kgInputs[1],key);refreshVolCard();});
+      kgInputs[2].addEventListener('input',()=>{checkPR(kgInputs[2],key);refreshVolCard();});
     });
-
-    container.appendChild(grpEl);
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
-// FINISH WORKOUT
-// ═══════════════════════════════════════════════════════════════
-async function finishWorkout() {
-  const iso  = toISO(activeDate);
-  const type = workoutTypeFor(activeDate);
-  const wk   = WORKOUTS[type];
+function makeInput(mode,key,i,field,val){
+  const inp=document.createElement('input');
+  inp.className='set-input';
+  inp.type='number';
+  inp.inputMode=mode;
+  inp.placeholder=field==='w'?'kg':'reps';
+  inp.dataset.key=key;
+  inp.dataset.set=i;
+  inp.dataset.field=field;
+  inp.value=val;
+  return inp;
+}
+function td(cls,txt){const e=document.createElement('td');e.className=cls;e.textContent=txt;return e;}
+function tdNode(node){const e=document.createElement('td');e.appendChild(node);return e;}
+function divider(){const e=document.createElement('div');e.className='sets-divider';return e;}
 
-  const row = { iso, type, sets: activeSets, done: true, ts: Date.now() };
+function getBest(key){
+  let best=0;
+  Object.entries(cache).forEach(([iso,e])=>{
+    if(iso===currentDate)return;
+    if(!e.sets||!e.sets[key])return;
+    e.sets[key].forEach(s=>{const w=parseFloat(s.w)||0;if(w>best)best=w;});
+  });
+  return best;
+}
 
-  // Optimistic update
-  db[iso] = row;
-  cacheDB();
+function checkPR(inp,key){
+  const v=parseFloat(inp.value);
+  if(!v){inp.classList.remove('pr');return;}
+  inp.classList.toggle('pr',v>getBest(key));
+}
 
-  // PRs
-  const bestPrev = {};
-  if (lastSameRow?.sets) {
-    Object.entries(lastSameRow.sets).forEach(([k, arr]) => {
-      bestPrev[k] = Math.max(0, ...arr.map(s => parseFloat(s.w) || 0));
-    });
-  }
-  const prs = [];
-  Object.entries(activeSets).forEach(([k, arr]) => {
-    const best = Math.max(0, ...arr.map(s => parseFloat(s.w) || 0));
-    const prev = bestPrev[k] || 0;
-    if (best > 0 && best > prev) {
-      prs.push({ name: findExName(type, k), weight: best, prev });
+function collectSets(){
+  const sets={};
+  document.querySelectorAll('.set-input').forEach(inp=>{
+    const k=inp.dataset.key,i=parseInt(inp.dataset.set),f=inp.dataset.field;
+    if(!sets[k])sets[k]=[{},{},{}];
+    sets[k][i][f]=inp.value;
+  });
+  return sets;
+}
+
+// ── DONE ──────────────────────────────────────────────────────────────────────
+function detectPRs(sets){
+  const prs=[];
+  Object.entries(sets).forEach(([key,arr])=>{
+    let maxW=0;
+    arr.forEach(s=>{const w=parseFloat(s.w)||0;if(w>maxW)maxW=w;});
+    if(!maxW)return;
+    const prev=getBest(key);
+    if(maxW>prev){
+      let dispName=key;
+      Object.values(EXERCISES).forEach(groups=>{
+        groups.forEach(g=>{g.items.forEach(n=>{if(exKey(n)===key)dispName=n;});});
+      });
+      prs.push({name:dispName,w:maxW,prev});
     }
   });
+  return prs;
+}
 
-  const vol = calcVolume(activeSets);
-  const lastVol = lastSameRow ? calcVolume(lastSameRow.sets) : 0;
+function openDone(row,prevRow){
+  const accent=TYPE_COLOR[row.type];
+  const vol=calcVol(row.sets);
+  const prevVol=prevRow?calcVol(prevRow.sets):null;
 
-  // Render done screen
-  document.getElementById('done-title').textContent = wk.name;
-  document.getElementById('done-title').style.color = wk.color;
-  document.getElementById('done-vol-num').textContent = Math.round(vol).toLocaleString();
+  document.getElementById('done-type').textContent=TYPE_LABEL[row.type];
+  document.getElementById('done-type').style.color=accent;
+  document.getElementById('done-vol').textContent=vol+' kg';
+  document.getElementById('done-vol').style.color=accent;
 
-  const deltaEl = document.getElementById('done-delta');
-  if (lastVol > 0) {
-    const diff = vol - lastVol;
-    const pct  = ((diff / lastVol) * 100).toFixed(1);
-    deltaEl.textContent = `${diff >= 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(0)} kg (${diff >= 0 ? '+' : ''}${pct}%) vs last`;
-    deltaEl.className = `done-delta ${diff >= 0 ? 'pos' : 'neg'}`;
+  const dEl=document.getElementById('done-delta');
+  if(prevVol!==null&&prevVol>0){
+    const diff=vol-prevVol;
+    const pct=((diff/prevVol)*100).toFixed(1);
+    dEl.textContent=(diff>=0?'▲ ':'▼ ')+Math.abs(diff)+' kg ('+(diff>=0?'+':'')+pct+'%) vs last';
+    dEl.className='done-delta '+(diff>=0?'up':'dn');
   } else {
-    deltaEl.textContent = '';
+    dEl.textContent='First session of this type';
+    dEl.className='done-delta';
   }
 
-  const prsEl = document.getElementById('done-prs');
-  if (prs.length) {
-    prsEl.innerHTML = `
-      <div class="prs-card">
-        <div class="prs-hdr"><span>★</span> New personal bests</div>
-        ${prs.map(pr => `
-          <div class="pr-item">
-            <span class="pr-name">${pr.name}</span>
-            <span class="pr-val">${pr.weight} kg <span class="pr-prev">(was ${pr.prev || '—'})</span></span>
-          </div>`).join('')}
-      </div>`;
+  const prs=detectPRs(row.sets);
+  const prCard=document.getElementById('done-pr-card');
+  if(prs.length){
+    prCard.innerHTML=`<div class="pr-card">
+      <div class="pr-eye">Personal Records</div>
+      ${prs.map(p=>`<div class="pr-row">
+        <span class="pr-name">${p.name}</span>
+        <span><span class="pr-val">${p.w} kg</span>${p.prev>0?`<span class="pr-prev">(was ${p.prev} kg)</span>`:''}</span>
+      </div>`).join('')}
+    </div>`;
   } else {
-    prsEl.innerHTML = '';
+    prCard.innerHTML='';
   }
 
-  goTo('done');
-  renderCalendar();
+  showScreen('screen-done');
+}
 
-  // Save to Supabase
-  try {
+// ── FINISH ────────────────────────────────────────────────────────────────────
+async function handleFinish(){
+  const sets=collectSets();
+  const prev=getPrevSession(currentType);
+  const row={iso:currentDate,type:currentType,sets,done:true,ts:Date.now()};
+
+  cache[currentDate]={type:currentType,sets,done:true,ts:row.ts};
+  saveCache();
+  openDone(row,prev);
+
+  try{
     await dbUpsert(row);
-    cacheDB();
-    showToast('Saved ✓', 'ok');
-  } catch (e) {
-    console.error(e);
-    showToast('Save failed — will retry', 'err');
+    toast('Saved ✓','#c9a84c');
+  } catch(e){
+    toast('Save failed — will retry','#c87b6e');
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CACHE (offline fallback)
-// ═══════════════════════════════════════════════════════════════
-function cacheDB() {
-  try { localStorage.setItem('gym_db', JSON.stringify(db)); } catch (e) {}
-}
-function loadCache() {
-  try {
-    const c = localStorage.getItem('gym_db');
-    if (c) db = JSON.parse(c);
-  } catch (e) {}
-}
+// ── INIT ──────────────────────────────────────────────────────────────────────
+async function init(){
+  setStatus('Preparing');
+  const d=new Date();
+  calYear=d.getFullYear(); calMonth=d.getMonth();
 
-// ═══════════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════════
-async function init() {
-  const today = new Date(); today.setHours(0,0,0,0);
-  calCursor = new Date(today.getFullYear(), today.getMonth(), 1);
+  const escape=setTimeout(()=>{
+    if(escaped)return; escaped=true;
+    toast('Offline — using cache','#c9a84c');
+    renderCalendar(); showScreen('screen-calendar');
+  },7000);
 
-  // Load cache immediately for instant UI
-  loadCache();
-
-  // Fetch from Supabase
-  try {
-    const rows = await dbGetAll();
-    db = {};
-    rows.forEach(r => { db[r.iso] = r; });
-    cacheDB();
-  } catch (e) {
-    console.error('Supabase load failed:', e);
-    if (Object.keys(db).length > 0) {
-      showToast('Offline — showing cached data', 'warn');
-    } else {
-      showToast('Connection error', 'err');
+  try{
+    loadCache();
+    setStatus('Reading cache');
+    renderCalendar();
+    setStatus('Connecting');
+    await dbGetAll();
+    setStatus('Synced');
+    renderCalendar();
+    clearTimeout(escape);
+    if(!escaped) showScreen('screen-calendar');
+  } catch(e){
+    clearTimeout(escape);
+    if(!escaped){
+      escaped=true;
+      toast('Offline — using cache','#c9a84c');
+      renderCalendar(); showScreen('screen-calendar');
     }
   }
-
-  renderCalendar();
-  goTo('cal');
-
-  // Month nav
-  document.getElementById('prev-month').addEventListener('click', () => {
-    calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth() - 1, 1);
-    renderCalendar();
-  });
-  document.getElementById('next-month').addEventListener('click', () => {
-    calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth() + 1, 1);
-    renderCalendar();
-  });
-
-  // Swipe to change month on calendar
-  let swipeX = null;
-  document.getElementById('screen-cal').addEventListener('touchstart', e => {
-    swipeX = e.touches[0].clientX;
-  }, { passive: true });
-  document.getElementById('screen-cal').addEventListener('touchend', e => {
-    if (swipeX === null) return;
-    const dx = e.changedTouches[0].clientX - swipeX;
-    if (Math.abs(dx) > 60) {
-      calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth() + (dx < 0 ? 1 : -1), 1);
-      renderCalendar();
-    }
-    swipeX = null;
-  }, { passive: true });
-
-  // Back button
-  document.getElementById('back-btn').addEventListener('click', () => {
-    goTo('cal');
-  });
-
-  // Finish
-  document.getElementById('finish-btn').addEventListener('click', finishWorkout);
-
-  // Done → back to cal
-  document.getElementById('done-back-btn').addEventListener('click', () => {
-    goTo('cal');
-  });
 }
+
+// ── EVENTS ────────────────────────────────────────────────────────────────────
+document.getElementById('btn-back').addEventListener('click',()=>{renderCalendar();showScreen('screen-calendar');});
+document.getElementById('btn-finish').addEventListener('click',handleFinish);
+document.getElementById('btn-return').addEventListener('click',()=>{renderCalendar();showScreen('screen-calendar');});
+document.getElementById('btn-prev').addEventListener('click',()=>{calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderGrid(calYear,calMonth);});
+document.getElementById('btn-next').addEventListener('click',()=>{calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderGrid(calYear,calMonth);});
+
+let swipeX=0;
+document.getElementById('screen-calendar').addEventListener('touchstart',e=>{swipeX=e.touches[0].clientX;},{passive:true});
+document.getElementById('screen-calendar').addEventListener('touchend',e=>{
+  const dx=swipeX-e.changedTouches[0].clientX;
+  if(Math.abs(dx)<60)return;
+  if(dx>0){calMonth++;if(calMonth>11){calMonth=0;calYear++;}}
+  else{calMonth--;if(calMonth<0){calMonth=11;calYear--;}}
+  renderGrid(calYear,calMonth);
+},{passive:true});
 
 init();
 </script>
