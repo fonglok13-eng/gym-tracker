@@ -242,7 +242,7 @@
 
     /* ─── WORKOUT SCREEN ─────────────────────────────────── */
     #screen-workout {
-      padding-bottom: calc(90px + var(--safe-bot));
+      padding-bottom: var(--safe-bot);
     }
 
     .wk-header {
@@ -363,10 +363,8 @@
 
     /* Finish btn */
     .finish-wrap {
-      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-      width: 100%; max-width: 430px;
-      padding: 12px 20px calc(12px + var(--safe-bot));
-      background: linear-gradient(transparent, var(--bg) 30%);
+      width: 100%;
+      padding: 32px 20px calc(20px + var(--safe-bot));
     }
     .finish-btn {
       width: 100%; background: var(--gold); color: var(--bg);
@@ -979,6 +977,7 @@ function buildExerciseCards(type) {
 
       // Input listeners
       card.querySelectorAll('.set-input').forEach(input => {
+        // Live: update state + PR highlight on every keystroke
         input.addEventListener('input', e => {
           const row = e.target.closest('.set-row');
           const key = row.dataset.key;
@@ -986,11 +985,35 @@ function buildExerciseCards(type) {
           const field = e.target.dataset.field;
           activeSets[key][idx][field] = e.target.value;
 
-          // PR highlight
+          // PR highlight for current row
           const w = parseFloat(activeSets[key][idx].w) || 0;
           const prev = bestPrev[key] || 0;
           row.classList.toggle('is-pr', w > 0 && prev > 0 && w > prev);
 
+          updateVolBar();
+        });
+
+        // On blur (tap away): if it's set 1 kg, copy to empty sets below
+        input.addEventListener('blur', e => {
+          const row = e.target.closest('.set-row');
+          const key = row.dataset.key;
+          const idx = parseInt(row.dataset.idx);
+          const field = e.target.dataset.field;
+          if (field !== 'w' || idx !== 0) return;
+          if (e.target.value === '') return;
+
+          const tbody = row.closest('tbody');
+          tbody.querySelectorAll('.set-row').forEach((r, i) => {
+            if (i === 0) return;
+            const wInput = r.querySelector('[data-field="w"]');
+            if (wInput && wInput.value === '') {
+              wInput.value = e.target.value;
+              activeSets[key][i].w = e.target.value;
+              const wv = parseFloat(e.target.value) || 0;
+              const pv = bestPrev[key] || 0;
+              r.classList.toggle('is-pr', wv > 0 && pv > 0 && wv > pv);
+            }
+          });
           updateVolBar();
         });
       });
